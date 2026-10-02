@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-02T18:57:24.8526137Z",
+  "title": "Design System: MoneyPrinterTurbo for Nimi",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "深绿"
+      },
+      "accent-hover": {
+        "role": "primary",
+        "displayName": "浅一档深绿"
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "纸面暖白"
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "白色控件面"
+      },
+      "result-surface": {
+        "role": "neutral",
+        "displayName": "灰绿结果面"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "深色正文"
+      },
+      "secondary": {
+        "role": "neutral",
+        "displayName": "次级灰绿"
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "页面标题",
+        "purpose": "紧凑的桌面页面标题。"
+      },
+      "title": {
+        "displayName": "章节标题",
+        "purpose": "表单章节与结果区标题。"
+      },
+      "script": {
+        "displayName": "脚本文本",
+        "purpose": "脚本编辑区，使用较松的行距。"
+      },
+      "body": {
+        "displayName": "正文",
+        "purpose": "工作台默认文本。"
+      },
+      "button": {
+        "displayName": "主操作",
+        "purpose": "主按钮的加重文字。"
+      },
+      "label": {
+        "displayName": "字段标签",
+        "purpose": "字段名称与折叠摘要。"
+      },
+      "caption": {
+        "displayName": "辅助说明",
+        "purpose": "说明、文件信息和次级操作。"
+      },
+      "stage": {
+        "displayName": "阶段标签",
+        "purpose": "进度轨道中的紧凑标识。"
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "button-background",
+        "value": "background 0.16s ease",
+        "purpose": "按钮背景状态变化；减少动态效果偏好下取消。"
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact-desktop",
+        "value": "1120px"
+      },
+      {
+        "name": "icon-rail",
+        "value": "900px"
+      },
+      {
+        "name": "stacked-window",
+        "value": "700px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "主按钮",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "深绿背景，用于页面主操作。",
+      "html": "<button class=\"ds-primary\">提交发布</button>",
+      "css": ".ds-primary{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #d6dcd5;background:#fff;color:#1e302e;padding:8px 12px;border-radius:7px;cursor:pointer;transition:background 0.16s ease;font-family:'Segoe UI', 'Microsoft YaHei', sans-serif;font-size:14px;line-height:1.55;background:#103d37;color:white;border-color:#103d37;font-weight:600;padding:11px 18px}.ds-primary:hover{background:#25534a}.ds-primary:focus-visible{outline:3px solid #ce492d;outline-offset:3px}.ds-primary:disabled{opacity:0.5;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-primary{transition:none!important}}"
+    },
+    {
+      "name": "普通按钮",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "白色按钮，用于次级任务操作。",
+      "html": "<button class=\"ds-secondary\">载入参数</button>",
+      "css": ".ds-secondary{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #d6dcd5;background:#fff;color:#1e302e;padding:8px 12px;border-radius:7px;cursor:pointer;transition:background 0.16s ease;font-family:'Segoe UI', 'Microsoft YaHei', sans-serif;font-size:14px;line-height:1.55;}.ds-secondary:hover{background:#e8ede7}.ds-secondary:focus-visible{outline:3px solid #ce492d;outline-offset:3px}.ds-secondary:disabled{opacity:0.5;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-secondary{transition:none!important}}"
+    },
+    {
+      "name": "透明按钮",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "透明按钮保留细边线，用于顶栏保存操作。",
+      "html": "<button class=\"ds-quiet\">保存创作参数</button>",
+      "css": ".ds-quiet{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #d6dcd5;background:#fff;color:#1e302e;padding:8px 12px;border-radius:7px;cursor:pointer;transition:background 0.16s ease;font-family:'Segoe UI', 'Microsoft YaHei', sans-serif;font-size:14px;line-height:1.55;background:transparent}.ds-quiet:hover{background:transparent}.ds-quiet:focus-visible{outline:3px solid #ce492d;outline-offset:3px}.ds-quiet:disabled{opacity:0.5;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-quiet{transition:none!important}}"
+    },
+    {
+      "name": "危险操作",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "暖色浅底，用于停止任务。",
+      "html": "<button class=\"ds-danger\">停止任务</button>",
+      "css": ".ds-danger{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #d6dcd5;background:#fff;color:#1e302e;padding:8px 12px;border-radius:7px;cursor:pointer;transition:background 0.16s ease;font-family:'Segoe UI', 'Microsoft YaHei', sans-serif;font-size:14px;line-height:1.55;color:#943924;border-color:#d8aa9d;background:#fff5ed;font-size:12px}.ds-danger:hover{background:#fff5ed}.ds-danger:focus-visible{outline:3px solid #ce492d;outline-offset:3px}.ds-danger:disabled{opacity:0.5;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-danger{transition:none!important}}"
+    },
+    {
+      "name": "图标按钮",
+      "kind": "button",
+      "refersTo": "button-icon",
+      "description": "无边线的结果区刷新操作。",
+      "html": "<button class=\"ds-icon\" aria-label=\"刷新任务状态\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8\"/><path d=\"M21 3v5h-5\"/><path d=\"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16\"/><path d=\"M8 16H3v5\"/></svg></button>",
+      "css": ".ds-icon{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #d6dcd5;background:#fff;color:#1e302e;padding:8px 12px;border-radius:7px;cursor:pointer;transition:background 0.16s ease;font-family:'Segoe UI', 'Microsoft YaHei', sans-serif;font-size:14px;line-height:1.55;padding:7px;border:0;background:transparent}.ds-icon:hover{background:transparent}.ds-icon:focus-visible{outline:3px solid #ce492d;outline-offset:3px}.ds-icon:disabled{opacity:0.5;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-icon{transition:none!important}}"
+    },
+    {
+      "name": "输入字段",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "标签、输入和辅助说明按纵向排列。",
+      "html": "<label class=\"ds-field\"><span>视频主题</span><input placeholder=\"例如：城市里的一次慢行\" /></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:7px;margin-bottom:18px;font-family:'Segoe UI', 'Microsoft YaHei', sans-serif;font-size:14px;line-height:1.55;font-size:13px;color:#1e302e}.ds-field>span{font-weight:600}.ds-field input{font-family:'Segoe UI', 'Microsoft YaHei', sans-serif;font-size:13px;line-height:1.55;border:1px solid #c6d0c8;border-radius:7px;background:#fff;color:#1e302e;padding:10px 12px;width:100%;min-width:0;caret-color:#103d37}.ds-field input:focus-visible{outline:3px solid #ce492d;outline-offset:3px}"
+    },
+    {
+      "name": "桌面导航",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "深绿轨道中的图文按钮，浅一档背景标示当前项。",
+      "html": "<nav class=\"ds-nav\" aria-label=\"主导航\"><button class=\"ds-nav-active\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"19\" height=\"19\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg>创作</button></nav>",
+      "css": ".ds-nav{display:grid;gap:7px;background:#103d37;padding:31px 20px;width:216px}.ds-nav button{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #d6dcd5;background:#fff;color:#1e302e;padding:8px 12px;border-radius:7px;cursor:pointer;transition:background 0.16s ease;font-family:'Segoe UI', 'Microsoft YaHei', sans-serif;font-size:14px;line-height:1.55;justify-content:flex-start;background:transparent;color:#cbdad1;border:0;padding:13px 10px}.ds-nav button:hover,.ds-nav .ds-nav-active{background:#25534a;color:#fff}.ds-nav button:focus-visible{outline:3px solid #ce492d;outline-offset:3px}@media(prefers-reduced-motion:reduce){.ds-nav button{transition:none!important}}"
+    },
+    {
+      "name": "阶段标签",
+      "kind": "chip",
+      "refersTo": "stage-tag",
+      "description": "阶段状态标识，包含未到达和已到达两种外观。",
+      "html": "<div class=\"ds-stages\"><span class=\"ds-stage-done\">脚本</span><span>配音</span></div>",
+      "css": ".ds-stages{display:flex;flex-wrap:wrap;gap:5px;font-family:'Segoe UI', 'Microsoft YaHei', sans-serif;font-size:14px;line-height:1.55;}.ds-stages span{font-size:10px;border:1px solid #c6d0c5;padding:3px 7px;border-radius:4px;color:#626d62}.ds-stages .ds-stage-done{background:#dce7db;color:#244b3e}"
+    },
+    {
+      "name": "制作记录",
+      "kind": "card",
+      "refersTo": "history-row",
+      "description": "可选择的记录行，长标题省略，右侧保留状态。",
+      "html": "<button class=\"ds-history ds-history-selected\"><span><strong>城市里的一次慢行</strong><small>制作记录</small></span><span class=\"ds-history-state\">等待</span></button>",
+      "css": ".ds-history{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #d6dcd5;background:#fff;color:#1e302e;padding:8px 12px;border-radius:7px;cursor:pointer;transition:background 0.16s ease;font-family:'Segoe UI', 'Microsoft YaHei', sans-serif;font-size:14px;line-height:1.55;display:flex;width:100%;justify-content:space-between;gap:15px;text-align:left;margin:7px 0;padding:17px}.ds-history>span:first-child{flex:1;min-width:0}.ds-history strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ds-history small{display:block;margin-top:5px;font-size:12px;color:#556460}.ds-history-state{font-size:11px}.ds-history:hover{background:#e8ede7}.ds-history.ds-history-selected{border-color:#103d37;background:#e8efe7}.ds-history:focus-visible{outline:3px solid #ce492d;outline-offset:3px}.ds-history:disabled{opacity:0.5;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-history{transition:none!important}}"
+    },
+    {
+      "name": "画幅选择",
+      "kind": "custom",
+      "refersTo": "aspect-option",
+      "description": "并列的画幅选项，以比例轮廓和文字共同表达。",
+      "html": "<div class=\"ds-aspects\" role=\"group\" aria-label=\"输出画幅\"><button class=\"ds-aspect-selected\"><span class=\"ds-aspect-shape\"></span><span>9:16<small>竖屏</small></span></button><button><span class=\"ds-aspect-shape ds-aspect-wide\"></span><span>16:9<small>横屏</small></span></button><button><span class=\"ds-aspect-shape ds-aspect-square\"></span><span>1:1<small>方形</small></span></button></div>",
+      "css": ".ds-aspects{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.ds-aspects button{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #d6dcd5;background:#fff;color:#1e302e;padding:8px 12px;border-radius:7px;cursor:pointer;transition:background 0.16s ease;font-family:'Segoe UI', 'Microsoft YaHei', sans-serif;font-size:14px;line-height:1.55;justify-content:flex-start;text-align:left;padding:12px}.ds-aspects button:hover{background:#e8ede7}.ds-aspects .ds-aspect-selected{border-color:#103d37;background:#e5eee7}.ds-aspects small{display:block;margin-top:3px;color:#556460;font-size:12px}.ds-aspect-shape{display:inline-block;border:1.5px solid #597469;margin:0 8px;width:22px;height:32px;flex-shrink:0;border-radius:3px}.ds-aspect-wide{width:34px;height:22px}.ds-aspect-square{width:27px;height:27px}.ds-aspects button:focus-visible{outline:3px solid #ce492d;outline-offset:3px}@media(prefers-reduced-motion:reduce){.ds-aspects button{transition:none!important}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "创作工作台",
+    "overview": "暖纸色画布、深绿导航与克制的媒体工具构成工作环境。界面围绕中文输入、精确选项和可检查的结果组织信息；视觉重心落在内容与操作上，密度适合持续工作的桌面窗口。\n\n本文记录 App 自有工作台的已实现视觉规则，依据 [Studio.tsx](src/production/Studio.tsx)、[studio.css](src/production/studio.css) 与 [styles.css](src/styles.css)。[PRODUCT.md](PRODUCT.md) 提供界面方向。AI 配置使用官方 Kit 界面，其内部组件继续由 Kit 管理。",
+    "keyCharacteristics": [
+      "暖白主画布与浅灰绿结果区，用色面区分工作区域。",
+      "深绿导航和主按钮形成稳定的操作锚点。",
+      "紧凑中文标签、统一界面字族和 Lucide 线性图标。",
+      "平面容器、细边线、轻圆角与清晰的键盘焦点。"
+    ],
+    "rules": [
+      {
+        "name": "The Task Accent Rule",
+        "body": "深绿锚定导航、主操作与选中状态；焦点和错误使用各自的状态色。",
+        "section": "colors"
+      },
+      {
+        "name": "The Working Text Rule",
+        "body": "标题、字段与说明使用同一中文可读的界面字族，以字号、字重和行距区分职责。",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Surface Rule",
+        "body": "常驻区域靠底色、边线和空间分层，不使用投影。",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do 用暖白、白色与灰绿区分工作区域，保持深绿主操作清楚可见。",
+      "Do 保持中文标签、输入和辅助说明的层次，并在对应字段附近解释条件。",
+      "Do 复用现有轻圆角、细边线、键盘焦点和减少动态效果规则。",
+      "Do 使用 Lucide 线性图标，媒体区域展示对应内容或说明性的空状态。",
+      "Do 在新增工作台区域延续平面分区，按内容需要使用独立滚动或现有窄窗行为。"
+    ],
+    "donts": [
+      "Don't 给创作工作台添加营销段落或装饰性仪表盘。",
+      "Don't 把状态色当作常态装饰，或仅靠颜色表达操作名称。",
+      "Don't 为 App 自有平面分区增加投影、装饰大卡片或无关展示型标题。",
+      "Don't 用字符字形代替新控件的图标，或将官方 Kit 配置组件复制成自有视觉分支。"
+    ]
+  }
+}
