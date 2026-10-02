@@ -1,0 +1,8 @@
+app_id: moneyprinterturbo.studio
+display_name: MoneyPrinterTurbo
+version: 0.1.0
+npm_package_name: moneyprinterturbo-nimi-app
+cargo_package_name: moneyprinterturbo-nimi-app-shell
+tauri_identifier: ai.nimi.apps.moneyprinterturbo.studio
+package_author: nimiplatform
+identity_role: scaffold-generated-authoring-input

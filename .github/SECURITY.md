@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Security fixes are applied on a best-effort basis to the latest `main` branch and the most recent published release line.
+This fork is in local development on the `nimi` branch. No installed release line has been verified yet; report the exact commit and App version that you tested.
 
 ## Reporting a Vulnerability
 

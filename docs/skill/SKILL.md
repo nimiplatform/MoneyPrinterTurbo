@@ -1,158 +1,32 @@
 ---
-name: moneyprinterturbo-video
-description: Use this skill whenever the user wants to create a finished video from a topic, title, idea, prompt, or script with MoneyPrinterTurbo. This includes short-form, voice-over, educational, marketing, social-media, and stock-footage videos. Also use it when the user mentions MoneyPrinterTurbo, provides this Skill URL, asks an AI agent to install or configure MoneyPrinterTurbo, needs missing API keys identified, wants a failed generation repaired, or wants a generated MP4 located and delivered. Use this skill when the expected outcome is a final video file, not setup instructions.
-compatibility: Requires an AI agent with terminal, network, filesystem, and long-running command support. Supports macOS and Windows and uses uv exclusively.
-metadata:
-  author: "harry0703@hotmail.com"
-  version: "1.3.2"
-  upstream: "https://github.com/harry0703/MoneyPrinterTurbo"
+name: moneyprinterturbo-production
+description: Operate the running MoneyPrinterTurbo Host through Nimi Integration.
 ---
 
-# MoneyPrinterTurbo Video Generation
+# MoneyPrinterTurbo Host 操作
 
-The user only needs to provide a video topic or script. Complete installation, configuration reuse, generation, waiting, and final MP4 delivery automatically. Do not stop after giving instructions or commands.
+这是 App 的产品操作指南。开发、安装与升级使用 App Tools 管理的 lifecycle skill。不要安装上游 provider 依赖、索要 AI API key 或调用退役的 CLI。
 
-## Required Behavior
+## 准备
 
-1. Ask the user only for required API credentials that are missing, rejected, or unusable. Combine all required credentials into one request.
-2. Do not ask for confirmation before installing, generating, waiting, using defaults, or returning the result.
-3. Do not create or repeatedly update a detailed plan for a standard generation request. Send one short progress update and execute.
-4. Run the helper as one foreground command with a timeout of at least 20 minutes.
-5. Never poll with `sleep`, `echo`, `ps`, repeated `ls`, or repeated `tail`. If the terminal returns a resumable session ID, continue waiting on that same session.
-6. Do not read the full log after success. Read only the short reported error or the relevant log tail after failure.
-7. Never print API keys, tokens, the full `config.toml`, or credential-bearing configuration fragments.
+在 Nimi Desktop 启动准确的 MoneyPrinterTurbo App。在 App 的「AI 配置」选择实际可用的能力资源；在「业务设置」填写库存素材或 Upload-Post 账户。通过 Nimi 的 Integration 管理界面授权调用者连接当前 Host 的 `moneyprinterturbo.production.v1` provider。运行中的同一 Host 是自动化入口；没有独立 HTTP 服务。
 
-## Defaults
+## 操作
 
-Unless the user requests otherwise, generate one Chinese `9:16` portrait video with Pexels footage, the default Chinese Edge TTS voice, subtitles, and background music. Install MoneyPrinterTurbo under the user's home directory.
+- `list {"limit": 20}`：查询本 Host 的任务摘要，每页最多50条。返回`nextCursor`时，传入`{"cursor":"...","limit":20}`读取下一页；新任务通过重新读取第一页发现。完整时间轴不放在列表中。
+- `create {"params": ...}`：提交完整业务参数快照，返回 `taskIds`。参数结构使用本 App 的 `src/production/types.ts`，可从已有任务的 `params` 取回并编辑。保持主题、脚本、素材、配音、字幕、音乐、画幅、批量与 `stopAt` 的真实选择。
+- `task {"id": "..."}`：查询原任务，检查状态、错误、已知 Job ID 与资产的返回 `relativePath`。完成后通过`asset`取回实际产物，或在MPT中预览、导出。
+- `asset {"id": "...", "name": "final.mp4", "offset": 0, "length": 32768}`：按任务产物白名单读取实际数据，返回base64、现有资产SHA、nextOffset和eof；读取到eof后核对完整字节。调用者不能把MPT的relativePath当作自己App存储中的路径。
+- `cancel {"id": "..."}`：停止该任务的 App 调度，终止其媒体工作并请求取消已知 Runtime Job。分别查看停止调度与实际取消结果。
 
-## Execution
+单条详细任务若超过Integration的1 MiB返回上限，调用走正式失败通道（Runtime归一为`PROVIDER_FAILED`），不会记为成功。通过`list`查看摘要，使用`asset`分块读取`script.txt`、`subtitle.srt`、`final.mp4`等已保存产物，或在MPT查看完整任务。回调传递失败不意味着业务未执行，不能据此重新`create`。
 
-### 1. Locate the helper
+调用 `create` 的写操作不支持自动重试。响应不确定时不要盲目重新创建或重新计费。已知 Job ID 查询原任务；只有源码与契约支持的音乐操作使用 submission lookup。Host 重开或会话恢复不会自动重放业务队列；在 App 中检查已保存产物后明确继续或创建新任务。
 
-Resolve `SKILL_DIR` from this `SKILL.md` file. The helper is the adjacent `mpt_agent.py`. Set the terminal tool's working directory to `SKILL_DIR` and invoke the helper by its relative filename. Do not put the absolute helper path in the command, and do not run an extra `ls` or `dir` check.
+## 产物与发布
 
-This is required on Windows because some agent terminal validators remove backslashes from absolute paths embedded in commands. Using `mpt_agent.py` with `workdir=SKILL_DIR` avoids that failure and works on both macOS and Windows.
+字幕来自真实 typed transcription words，保留原转写与时间轴。素材、音频和视频按返回 `relativePath` 消费，不猜测安装目录或源码 storage 路径。阶段产物并不都代表完整成片。
 
-If the client loaded only the remote `SKILL.md`, download the helper from the official repository to a temporary directory, then use that temporary directory as the command working directory:
+Upload-Post 在 App 中进行：检查成片、文案、平台、账号与 YouTube 受众/隐私声明，再由用户明确确认提交。此 provider 不提供自动社交发布。提交前保存 request ID 与业务账号；不确定响应只查询原请求。逐平台失败、跳过和 TikTok 送入草稿不能宣布为全部已发布。
 
-```text
-https://raw.githubusercontent.com/harry0703/MoneyPrinterTurbo/main/docs/skill/mpt_agent.py
-```
-
-### 2. Run the helper
-
-Do not run a separate `uv --version` preflight. Run the helper directly. If the shell explicitly reports that uv is missing, install uv and retry the same helper command once.
-
-macOS uv installation:
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-Windows PowerShell uv installation:
-
-```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
-Use this foreground command with `workdir=SKILL_DIR` and a timeout of at least 20 minutes:
-
-```bash
-uv run --no-project --python 3.11 python mpt_agent.py --subject "<video topic>"
-```
-
-On Windows, do not try absolute backslash paths, absolute forward-slash paths, or copies in the workspace before this relative command. If a terminal tool reports `referenced_script_path_missing`, verify that its working directory is exactly `SKILL_DIR` and retry the relative command once. Do not cycle through path variants.
-
-Do not use Docker, Conda, system pip, or a manually managed virtual environment.
-
-## Exit Handling
-
-### Exit code 0: deliver the result
-
-Successful output has this form:
-
-```text
-MPT_RESULT
-VIDEO_FILE=<absolute path>/final-1.mp4
-TASK_DIR=<absolute path>/storage/tasks/<task_id>
-LOG_FILE=<absolute path>/run-<task_id>.log
-RESULT_FILE=<absolute path>/latest-result.json
-```
-
-`mpt_agent.py` emits `VIDEO_FILE` only after confirming that the file exists and is non-empty. Do not run another `ls`, `stat`, or file validation command.
-
-If the terminal reports `exitCode=0` but truncates the output or returns a history-file reference without `MPT_RESULT`, do not infer failure and do not inspect old logs. Read this file once:
-
-```text
-~/MoneyPrinterTurbo/.agent-logs/moneyprinterturbo-video/latest-result.json
-```
-
-Treat `status=completed` as success. Return only the absolute video path and a concise description, for example:
-
-```text
-The video is ready.
-Topic: ...
-Video file: /absolute/path/to/final-1.mp4
-Summary: Chinese portrait video with voice-over, subtitles, and background music.
-```
-
-### Exit code 10: request credentials once
-
-`MPT_NEEDS_INPUT` includes only the required fields, recommended LLM providers and signup links, custom OpenAI-compatible requirements, and material-provider signup links. Ask only for the listed values and do not request credentials already found in `config.toml`.
-
-After the user responds, rerun the same foreground command with only the required environment variables:
-
-```text
-MPT_LLM_PROVIDER
-MPT_LLM_API_KEY
-MPT_LLM_BASE_URL
-MPT_LLM_MODEL_NAME
-MPT_PEXELS_API_KEY
-MPT_VOLCENGINE_ARK_API_KEY
-MPT_OFOX_API_KEY
-MPT_METASO_MINIMAX_API_KEY
-MPT_MUAPI_API_KEY
-```
-
-When `SEEDANCE_CHARGE_CONFIRMATION_REQUIRED` is present, explain that every
-generated Seedance clip creates a paid Ark task. Only after the user explicitly
-confirms, rerun with `--confirm-seedance-charge`; never add this flag silently.
-
-When `WAVESPEED_CHARGE_CONFIRMATION_REQUIRED` is present, explain that every
-generated WaveSpeed clip is billed per request by WaveSpeed. Only after the user
-explicitly confirms, rerun with `--confirm-wavespeed-charge`; never add this
-flag silently.
-
-When `OFOX_CHARGE_CONFIRMATION_REQUIRED` is present, explain that every
-generated OFox clip creates a paid task. Only after the user explicitly
-confirms, rerun with `--confirm-ofox-charge`; never add this flag silently.
-
-When `METASO_MINIMAX_CHARGE_CONFIRMATION_REQUIRED` is present, explain that
-every generated MiniMax H3 clip creates a paid Metaso task. Only after the user
-explicitly confirms, rerun with `--confirm-metaso-minimax-charge`; never add
-this flag silently.
-
-When `MUAPI_CHARGE_CONFIRMATION_REQUIRED` is present, explain that every
-generated MuAPI clip creates a paid task. Only after the user explicitly
-confirms, rerun with `--confirm-muapi-charge`; never add this flag silently.
-
-### Exit code 1: repair or report
-
-Use `MPT_ERROR` and `LOG_FILE` to repair a recoverable problem and retry once. Ask the user only if the repair requires a new API key. If the retry fails, report the failed stage, a short error, and the log path.
-
-A terminal-tool path validation error is not a video-generation failure because the helper did not start. Correct the working directory and retry the relative command once. Never ask the user to copy `mpt_agent.py`, run commands manually, or confirm whether the agent should continue.
-
-## Configuration and Background Fallback
-
-The helper may read the complete local `config.toml` to reuse existing settings, but it must never print its contents. It reuses a working LLM provider automatically and validates configured Pexels keys through the authenticated My Collections endpoint before generation.
-
-Use background mode only if the agent platform cannot wait for a foreground process. Wait for the platform's process-completion notification without polling, then read `latest-result.json` once.
-
-## Scope
-
-- Support macOS and Windows only.
-- Use uv and the MoneyPrinterTurbo CLI only.
-- Do not start Docker, WebUI, or API services.
-- Do not run multiple video jobs concurrently.
-- Pass additional video requirements after `--`. Run `cli.py --help` once only when an unfamiliar option must be verified.
+实际已验收及 NOT-VERIFIED 路径见 [NIMI_ADAPTATION.md](../../NIMI_ADAPTATION.md)。

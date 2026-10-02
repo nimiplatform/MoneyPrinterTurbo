@@ -1480,6 +1480,7 @@ def generate_video(
     output_file: str,
     params: VideoParams,
     bgm_file_override: str | None = None,
+    loop_bgm: bool = False,
 ) -> bool:
     """
     合成最终视频，并返回本次背景音乐处理是否成功。
@@ -1756,18 +1757,20 @@ def generate_video(
         bgm_mix_succeeded = True
         if bgm_file:
             try:
-                bgm_effects = [
-                    afx.MultiplyVolume(params.bgm_volume),
-                    afx.AudioFadeOut(3),
-                ]
-                # 服务内解析的随机/自定义音乐可能比成片短，需要循环铺满；任务层
-                # 通过 override 传入的文件表示提供商已经完成时长适配。这里依据
-                # 文件来源决定是否循环，避免今后每增加一个提供商都修改名称白名单。
-                if bgm_file_override is None:
-                    bgm_effects.append(afx.AudioLoop(duration=video_clip.duration))
                 bgm_source_clip = clip_stack.enter_context(AudioFileClip(bgm_file))
-                bgm_clip = bgm_source_clip.with_effects(bgm_effects)
-                audio_clip = CompositeAudioClip([audio_clip, bgm_clip])
+                # Looping is an App decision (local/random music), not inferred from
+                # a file path. Keep generated music's original end when it is shorter.
+                bgm_clip = bgm_source_clip
+                if loop_bgm:
+                    bgm_clip = bgm_clip.with_effects([afx.AudioLoop(duration=video_clip.duration)])
+                bgm_clip = bgm_clip.with_duration(min(bgm_clip.duration, video_clip.duration))
+                bgm_clip = bgm_clip.with_effects([
+                    afx.MultiplyVolume(params.bgm_volume),
+                    afx.AudioFadeOut(min(3, bgm_clip.duration)),
+                ])
+                # MoviePy otherwise writes the longest audio input past the last
+                # video frame (e.g. a 3-second video with a 180-second soundtrack).
+                audio_clip = CompositeAudioClip([audio_clip, bgm_clip]).with_duration(video_clip.duration)
             except Exception:
                 bgm_mix_succeeded = False
                 # 记录完整堆栈和稳定上下文，便于区分文件解码、MoviePy 特效和

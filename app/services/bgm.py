@@ -11,8 +11,7 @@ from loguru import logger
 from app.utils import file_security, utils
 
 
-# Streamlit 默认允许较大的上传文件，但背景音乐通常只有几 MB。这里设置明确的
-# 服务端上限，避免 API 或 WebUI 把超大文件完整写入磁盘，影响同一进程中的视频任务。
+# 背景音乐操作的字节上限，避免媒体 scratch 被单个上传占满。
 MAX_BGM_UPLOAD_BYTES = 30 * 1024 * 1024
 _COPY_CHUNK_BYTES = 1024 * 1024
 _INTERNAL_UPLOAD_PREFIX = ".bgm-upload-"
@@ -21,7 +20,7 @@ _WINDOWS_RESERVED_FILENAMES = frozenset(
     {"CON", "PRN", "AUX", "NUL"}
     | {f"{prefix}{number}" for prefix in ("COM", "LPT") for number in range(1, 10)}
     # Win32 把 Latin-1 上标数字 ¹、²、³ 也识别为设备编号，因此与普通数字保留名
-    # 同等处理，避免 COM¹.mp3 绕过保护。清单与 webui/Main.py 的下载文件名规则一致。
+    # 同等处理，避免 COM¹.mp3 绕过保护。
     | {f"{prefix}{number}" for prefix in ("COM", "LPT") for number in ("¹", "²", "³")}
 )
 # 文件名会原样进入日志、API 响应和 WebUI 界面，因此除路径分隔符与 Win32 保留名外，
@@ -49,7 +48,7 @@ _UNSAFE_FILENAME_CHARACTERS = frozenset(
 )
 # MoviePy 最终通过 FFmpeg 解码背景音乐，因此不需要人为限制为 MP3。这里仅开放
 # 主流且语义明确的音频扩展名，避免把 MP4 等带视频容器误当作背景音乐上传。
-# 元组同时作为 WebUI 上传控件的单一数据源，后续增删格式时不会出现前后端不一致。
+# Host 上传控件与媒体校验采用这些音频格式。
 SUPPORTED_BGM_EXTENSIONS = (
     ".mp3",
     ".m4a",
@@ -75,7 +74,7 @@ def should_use_bgm(bgm_type: str | None, bgm_volume: float | None) -> bool:
     统一判断当前任务是否需要处理任何背景音乐。
 
     该规则与具体来源无关：没有选择来源、音量不合法或音量不大于 0 时，随机、
-    自定义、Sonilo 以及未来新增的提供商都必须跳过文件解析、外部生成和最终混音。
+    自定义和 AI 来源都必须跳过文件解析、生成和最终混音。
     放在通用 BGM 服务中可以避免每增加一个提供商就复制一套 0 音量判断。
     """
     if not str(bgm_type or "").strip():
@@ -89,10 +88,9 @@ def should_use_bgm(bgm_type: str | None, bgm_volume: float | None) -> bool:
 
 def uploaded_bgm_dir(create: bool = True) -> str:
     """
-    返回用户背景音乐的持久化目录。
+    返回 Host scratch 内的背景音乐暂存目录。
 
-    内置歌曲属于代码资源，继续放在 resource/songs；用户上传内容属于运行时数据，
-    必须放在 Docker 已挂载的 storage 下，容器重建后才能保留，也不会污染 Git 工作区。
+    持久资产由 Host 的 Nimi App storage 管理，Python 不保存项目。
     """
     return utils.storage_dir("bgm", create=create)
 
@@ -379,9 +377,7 @@ def resolve_bgm_file(unsafe_path: str) -> str:
     在用户上传目录和内置歌曲目录中解析 BGM，并拒绝两个白名单之外的路径与上传
     中断遗留的暂存文件。
 
-    文件名优先命中用户目录，同时保留 `output000.mp3`、绝对白名单路径和
-    `./resource/songs/output000.mp3` 等旧用法。新上传文件使用 UUID，正常情况下
-    不会与内置歌曲或历史上传发生重名。
+    文件名或绝对路径必须解析到指定媒体目录内；上传暂存使用独立 UUID。
     """
     if (
         not unsafe_path

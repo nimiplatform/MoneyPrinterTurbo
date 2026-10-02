@@ -1,0 +1,62 @@
+{
+  "name": "moneyprinterturbo-nimi-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist-electron/main.js",
+  "packageManager": "pnpm@10.34.5",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron",
+      "esbuild",
+      "protobufjs"
+    ]
+  },
+  "scripts": {
+    "dev": "nimi-app dev --shell electron",
+    "dev:renderer": "vite --host 127.0.0.1 --port 1450 --strictPort",
+    "dev:shell": "nimi-app dev",
+    "dev:electron": "nimi-app dev --shell electron",
+    "init": "nimi-app init --adopt",
+    "sync": "nimi-app sync",
+    "check": "nimi-app check",
+    "test": "nimi-app test",
+    "test:app": "pnpm run typecheck && tsc --noEmit -p tsconfig.electron.json && node --test test/production/*.test.mjs && python -m uv run --no-sync python -X utf8 -m pytest -q test/media",
+    "app:build": "nimi-app build",
+    "pack": "nimi-app pack",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build",
+    "build:electron": "tsc --noEmit -p tsconfig.electron.json && node scripts/build-electron.mjs",
+    "build:electron:production": "node scripts/clean-electron-production.mjs && pnpm run build && pnpm run build:electron && node scripts/package-electron-production.mjs",
+    "postinstall": "install-electron --no",
+    "validate": "node scripts/validate.mjs",
+    "media:prepare": "node scripts/prepare-media.mjs"
+  },
+  "dependencies": {
+    "@nimiplatform/sdk": "^0.19.0",
+    "@nimiplatform/kit": "^0.16.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "i18next": "^25.10.10",
+    "lucide-react": "^0.577.0"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "@nimiplatform/app-tools": "^0.11.4",
+    "@nimiplatform/nimi-coding": "0.6.3",
+    "@tailwindcss/vite": "^4.3.3",
+    "@tauri-apps/cli": "^2.11.4",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^42.10.1",
+    "esbuild": "^0.28.2",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.6",
+    "yaml": "^2.9.0"
+  },
+  "author": "nimiplatform",
+  "license": "MIT"
+}

@@ -91,7 +91,7 @@ def root_dir():
 
 
 def storage_dir(sub_dir: str = "", create: bool = False):
-    d = os.path.join(root_dir(), "storage")
+    d = os.environ["MPT_SCRATCH_ROOT"]
     if sub_dir:
         d = os.path.join(d, sub_dir)
     if create:
@@ -101,7 +101,7 @@ def storage_dir(sub_dir: str = "", create: bool = False):
 
 
 def resource_dir(sub_dir: str = ""):
-    d = os.path.join(root_dir(), "resource")
+    d = os.environ.get("MPT_RESOURCE_ROOT", os.path.join(root_dir(), "resource"))
     if sub_dir:
         d = os.path.join(d, sub_dir)
     return d

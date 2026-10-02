@@ -33,7 +33,7 @@ CLAUDE.md
 debug/
 debug_*.py
 test_*.py
-!test/services/test_*.py
+!test/media/test_*.py
 !test/test_*.py
 streamlit.log
 .coverage
@@ -43,5 +43,15 @@ htmlcov/
 /docs/superpowers
 .understand-anything
 
-# Claude Code 订阅令牌（docker compose 自动读取），禁止提交
+# 私有开发环境输入，禁止提交
 .env
+
+# Nimi development outputs
+dist/
+dist-electron/
+dist-electron-package/
+.nimi/local/
+.turbo/
+.vite/
+.env.local
+.env.*.local

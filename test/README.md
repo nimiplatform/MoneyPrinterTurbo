@@ -1,55 +1,14 @@
-# MoneyPrinterTurbo Test Directory
+# MoneyPrinterTurbo checks
 
-This directory contains unit tests for the **MoneyPrinterTurbo** project.
+从 App 根目录运行：
 
-## Directory Structure
-
-- `services/`: Domain-focused unit and controller tests
-  - `test_task.py`: Task pipeline tests
-  - `test_task_manager.py`: In-memory and Redis queue tests
-  - `test_controller_*.py`: API controller tests split by controller domain
-  - `test_video.py`, `test_voice.py`: Media service tests
-- `test_main.py`: Application entry-point test
-
-## Running Tests
-
-The CI suite uses pytest, which also runs the existing `unittest.TestCase`
-tests:
-
-```bash
-# Run all tests
-uv run python -X utf8 -m pytest -q test
-
-# Run a specific test file
-uv run python -X utf8 -m pytest -q test/services/test_video.py
-
-# Run a specific test class
-uv run python -X utf8 -m pytest -q test/services/test_video.py::TestVideoService
-
-# Run a specific test method
-uv run python -X utf8 -m pytest -q test/services/test_video.py::TestVideoService::test_preprocess_video
+```powershell
+pnpm exec nimi-app check
+pnpm exec nimi-app test
 ```
 
-To run the same branch coverage check used by CI:
+直接测试命令由 `.nimi/config/build-profile.yaml` 声明。Node 测试验证时间轴规则、进程失败和发布回执规则；Python `test/media` 验证保留的确定性剪辑/字幕/音频行为，使用隔离 scratch，含真实 FFmpeg 编码与解码检查。测试用的故障注入或 MoviePy 替身只证明对应机制，不是产品产物。
 
-```bash
-uv run python -X utf8 -m coverage run -m pytest -q test
-uv run python -m coverage report
-```
+真实验收必须使用 Desktop 监督的准确 MoneyPrinterTurbo Electron target，优先 CDP。UI 操作、完整媒体消费、播放与 FFprobe 的实际范围记录在现有 NIMI_ADAPTATION.md；check/build 或 mock 回归不能代替它。媒体 bundle 在开发 build 中准备，实际包内 Python worker 另行执行媒体任务。
 
-Live provider tests are skipped by default. To run tests that may call external
-TTS or LLM services, set `MPT_RUN_INTEGRATION_TESTS=1` and provide the required
-provider credentials.
-
-## Adding New Tests
-
-To add tests for other components, follow these guidelines:
-
-1. Name files `test_<domain>.py` and keep each file focused on one domain.
-2. Split broad controller suites into files such as `test_controller_video.py`.
-3. Use either pytest functions or `unittest.TestCase`; pytest collects both.
-4. Name test functions and methods with the `test_` prefix.
-
-## Test Resources
-
-Place any resource files required for testing in the `test/resources` directory.
+原 Python AI providers、API、CLI 与 WebUI 测试随对应产品入口硬切。Git 保留历史；未为退役入口增加兼容层。
