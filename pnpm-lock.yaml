@@ -6,20 +6,20 @@ settings:
 
 overrides:
   '@nimiplatform/app-tools': file:.nimi/local/platform-packages/runtime-evolution/nimiplatform-app-tools-0.11.4.tgz
-  '@nimiplatform/sdk': file:.nimi/local/platform-packages/runtime-evolution/nimiplatform-sdk-0.19.0.tgz
-  '@nimiplatform/kit': file:.nimi/local/platform-packages/renderer-speech-fix/nimiplatform-kit-0.16.0.tgz
-  '@nimiplatform/kit-protected-local-win32-x64': file:.nimi/local/platform-packages/runtime-evolution/nimiplatform-kit-protected-local-win32-x64-0.16.0.tgz
+  '@nimiplatform/sdk': file:.nimi/local/platform-packages/ai-capability-20261003/nimiplatform-sdk-0.19.0.tgz
+  '@nimiplatform/kit': file:.nimi/local/platform-packages/ai-capability-20261003/nimiplatform-kit-0.16.0.tgz
+  '@nimiplatform/kit-protected-local-win32-x64': file:.nimi/local/platform-packages/ai-capability-20261003/nimiplatform-kit-protected-local-win32-x64-0.16.0.tgz
 
 importers:
 
   .:
     dependencies:
       '@nimiplatform/kit':
-        specifier: file:.nimi/local/platform-packages/renderer-speech-fix/nimiplatform-kit-0.16.0.tgz
-        version: file:.nimi/local/platform-packages/renderer-speech-fix/nimiplatform-kit-0.16.0.tgz(@types/node@24.19.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(electron@42.11.10)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        specifier: file:.nimi/local/platform-packages/ai-capability-20261003/nimiplatform-kit-0.16.0.tgz
+        version: file:.nimi/local/platform-packages/ai-capability-20261003/nimiplatform-kit-0.16.0.tgz(@types/node@24.19.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(electron@42.11.10)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@nimiplatform/sdk':
-        specifier: file:.nimi/local/platform-packages/runtime-evolution/nimiplatform-sdk-0.19.0.tgz
-        version: file:.nimi/local/platform-packages/runtime-evolution/nimiplatform-sdk-0.19.0.tgz(@grpc/grpc-js@1.14.5)
+        specifier: file:.nimi/local/platform-packages/ai-capability-20261003/nimiplatform-sdk-0.19.0.tgz
+        version: file:.nimi/local/platform-packages/ai-capability-20261003/nimiplatform-sdk-0.19.0.tgz(@grpc/grpc-js@1.14.5)
       i18next:
         specifier: ^25.10.10
         version: 25.10.10(typescript@5.9.3)
@@ -590,14 +590,14 @@ packages:
       vite:
         optional: true
 
-  '@nimiplatform/kit-protected-local-win32-x64@file:.nimi/local/platform-packages/runtime-evolution/nimiplatform-kit-protected-local-win32-x64-0.16.0.tgz':
-    resolution: {integrity: sha512-A28TO782Dkgk7tCBmz8vHraRDUZokkt5M3gU1oP9XKaDohKtMxfA9JubtRB1wxWOSdphWCByAD5s4gV1Ms4giA==, tarball: file:.nimi/local/platform-packages/runtime-evolution/nimiplatform-kit-protected-local-win32-x64-0.16.0.tgz}
+  '@nimiplatform/kit-protected-local-win32-x64@file:.nimi/local/platform-packages/ai-capability-20261003/nimiplatform-kit-protected-local-win32-x64-0.16.0.tgz':
+    resolution: {integrity: sha512-dd6oZstnKlZmcC7kUQhnfmsVYhg5RirBxLnW44RTssHTgaXJvpEvCuSEvd47mhP+9n4PX1qEj5XT+R8Yjod4vA==, tarball: file:.nimi/local/platform-packages/ai-capability-20261003/nimiplatform-kit-protected-local-win32-x64-0.16.0.tgz}
     version: 0.16.0
     cpu: [x64]
     os: [win32]
 
-  '@nimiplatform/kit@file:.nimi/local/platform-packages/renderer-speech-fix/nimiplatform-kit-0.16.0.tgz':
-    resolution: {integrity: sha512-axRaUwCFx0VV7eG7ENpPrKoPAlBUU61ZiHdfy5Wnh9VDueH5j2uP2pI1bvfKcMf0RMgS3+kfgGQVdM9sdW8Urg==, tarball: file:.nimi/local/platform-packages/renderer-speech-fix/nimiplatform-kit-0.16.0.tgz}
+  '@nimiplatform/kit@file:.nimi/local/platform-packages/ai-capability-20261003/nimiplatform-kit-0.16.0.tgz':
+    resolution: {integrity: sha512-8b4QyKZSGg4NjtuoymAUjsknWscKX+WdL/pjcN1ZVXlNjvaRLf5Jn+i2i2D/LODK2rbf7IpmJQpLG/Y9oX+57Q==, tarball: file:.nimi/local/platform-packages/ai-capability-20261003/nimiplatform-kit-0.16.0.tgz}
     version: 0.16.0
     peerDependencies:
       electron: ^42.5.0
@@ -617,8 +617,8 @@ packages:
     engines: {node: '>=24.0.0', pnpm: '>=10.0.0'}
     hasBin: true
 
-  '@nimiplatform/sdk@file:.nimi/local/platform-packages/runtime-evolution/nimiplatform-sdk-0.19.0.tgz':
-    resolution: {integrity: sha512-3TTGB8mCa/QkdzX/GmZHg+LCVyMbef5iEPrhbW9sgz7GfGFfQ3pkDTK3Tu+hoEJSivW9DLDRr58zLZD/3RjFcA==, tarball: file:.nimi/local/platform-packages/runtime-evolution/nimiplatform-sdk-0.19.0.tgz}
+  '@nimiplatform/sdk@file:.nimi/local/platform-packages/ai-capability-20261003/nimiplatform-sdk-0.19.0.tgz':
+    resolution: {integrity: sha512-Mxzt242zh5acFOkmRll/G9P0Uy73IINkrjQfA5LOlaDxH4buHEiqC87Ztp8Jtx+lXtePhAgnzcywwjq0yZUtxw==, tarball: file:.nimi/local/platform-packages/ai-capability-20261003/nimiplatform-sdk-0.19.0.tgz}
     version: 0.19.0
     peerDependencies:
       '@grpc/grpc-js': ^1.14.4
@@ -2753,13 +2753,13 @@ snapshots:
     optionalDependencies:
       vite: 7.3.6(@types/node@24.19.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.1)
 
-  '@nimiplatform/kit-protected-local-win32-x64@file:.nimi/local/platform-packages/runtime-evolution/nimiplatform-kit-protected-local-win32-x64-0.16.0.tgz':
+  '@nimiplatform/kit-protected-local-win32-x64@file:.nimi/local/platform-packages/ai-capability-20261003/nimiplatform-kit-protected-local-win32-x64-0.16.0.tgz':
     optional: true
 
-  '@nimiplatform/kit@file:.nimi/local/platform-packages/renderer-speech-fix/nimiplatform-kit-0.16.0.tgz(@types/node@24.19.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(electron@42.11.10)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@nimiplatform/kit@file:.nimi/local/platform-packages/ai-capability-20261003/nimiplatform-kit-0.16.0.tgz(@types/node@24.19.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(electron@42.11.10)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@grpc/grpc-js': 1.14.5
-      '@nimiplatform/sdk': file:.nimi/local/platform-packages/runtime-evolution/nimiplatform-sdk-0.19.0.tgz(@grpc/grpc-js@1.14.5)
+      '@nimiplatform/sdk': file:.nimi/local/platform-packages/ai-capability-20261003/nimiplatform-sdk-0.19.0.tgz(@grpc/grpc-js@1.14.5)
       '@radix-ui/react-avatar': 1.2.6(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@radix-ui/react-dialog': 1.1.23(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@radix-ui/react-popover': 1.1.23(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -2784,7 +2784,7 @@ snapshots:
       wlipsync: 1.3.1
       zod: 4.5.4
     optionalDependencies:
-      '@nimiplatform/kit-protected-local-win32-x64': file:.nimi/local/platform-packages/runtime-evolution/nimiplatform-kit-protected-local-win32-x64-0.16.0.tgz
+      '@nimiplatform/kit-protected-local-win32-x64': file:.nimi/local/platform-packages/ai-capability-20261003/nimiplatform-kit-protected-local-win32-x64-0.16.0.tgz
       electron: 42.11.10
       react-dom: 19.3.0(react@19.3.0)
     transitivePeerDependencies:
@@ -2799,7 +2799,7 @@ snapshots:
       typescript: 5.9.3
       yaml: 2.9.1
 
-  '@nimiplatform/sdk@file:.nimi/local/platform-packages/runtime-evolution/nimiplatform-sdk-0.19.0.tgz(@grpc/grpc-js@1.14.5)':
+  '@nimiplatform/sdk@file:.nimi/local/platform-packages/ai-capability-20261003/nimiplatform-sdk-0.19.0.tgz(@grpc/grpc-js@1.14.5)':
     dependencies:
       '@protobuf-ts/runtime': 2.11.1
     optionalDependencies:
