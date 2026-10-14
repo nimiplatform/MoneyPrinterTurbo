@@ -21,7 +21,7 @@
     "sync": "nimi-app sync",
     "check": "nimi-app check",
     "test": "nimi-app test",
-    "test:app": "pnpm run typecheck && tsc --noEmit -p tsconfig.electron.json && node --test test/production/*.test.mjs && node scripts/setup-media.mjs --test",
+    "test:app": "node scripts/setup-media.mjs --test && pnpm run typecheck && tsc --noEmit -p tsconfig.electron.json && node --test test/production/*.test.mjs",
     "setup:media": "node scripts/setup-media.mjs",
     "app:build": "nimi-app build",
     "pack": "nimi-app pack",
