@@ -2,6 +2,12 @@
 
 审计日期：2026 年 10 月 2 日。面向本 fork 的实施 worker 和后续评审。本文件是版本限定的审计与方案，不是 Nimi 产品权威，也不表示方案已经获批、功能已经实现或发布已经完成。
 
+## Dashscope 媒体诊断回归（2026-10-15，开发环境）
+
+独立于发布和 Registry，本次使用原开发注册、Desktop-supervised Electron 与 App 自身 CDP，复查 0.1.0 的云端配音。为匹配源码监督器，临时通过完整 tarball 使用 SDK 0.21.0、Kit/native 0.21.0、App Tools 0.13.1；验收后恢复原依赖声明及锁文件。Runtime 来自 Nimi 当前源码工作树，包含工作区原有的其他未提交修改；本次产品修复仅涉及 Dashscope 有限 ASR，修复 checkpoint 为 Nimi `b2368a2d8`，不把相同版本号视为正式安装包的同源证明。
+
+通过公开 AI 配置重新选择原 Dashscope 连接上的 `qwen3-tts-flash`。完整预览 Job `01M4XSH4MWFMEP8FNGREFATGX7` 实际请求为 preset `cherry` / WAV，得到 6.16 秒音频。增加一句脚本后走独立配音阶段，Job `01M4XSZRTGZ6KCSB25FQ3NHQ7S` 得到 9.04 秒 WAV；不是复用预览。两份音频均由 App 受控播放器播放到结尾，无解码错误。旧 Job `01M4XHR2PY2C2Q90DEYYHGMEPT`、`01M4XJ95C4BP9A58DHDXV262F4` 的具体提供商错误未恢复，本次没有复现 `AI_PROVIDER_INTERNAL`，不宣称其历史根因已修复，也没有据此改音色大小写、endpoint 或自动重试策略。正式安装包的修复后回归为 NOT-VERIFIED；未重新发布、准入或执行 Catalog 验收。
+
 ## Catalog 准入与验收（2026-10-14 至 2026-10-15）
 
 用户明确批准现有 Windows x86_64 / stable 候选并接受既有记录限制后，Registry PR 104 完成最终检查并合入。正式 Home 已从 Catalog 下载、校验并安装 0.1.0；Catalog 来源实例启动并连接 Nimi Host。AI 配置保留 Deepseek V4 Flash、Qwen3 TTS Flash 与本机 Whisper；Catalog 项目存储与本地导入版独立，旧数据保留。
