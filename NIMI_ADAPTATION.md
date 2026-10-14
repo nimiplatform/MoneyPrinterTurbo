@@ -8,6 +8,23 @@
 
 通过公开 AI 配置重新选择原 Dashscope 连接上的 `qwen3-tts-flash`。完整预览 Job `01M4XSH4MWFMEP8FNGREFATGX7` 实际请求为 preset `cherry` / WAV，得到 6.16 秒音频。增加一句脚本后走独立配音阶段，Job `01M4XSZRTGZ6KCSB25FQ3NHQ7S` 得到 9.04 秒 WAV；不是复用预览。两份音频均由 App 受控播放器播放到结尾，无解码错误。旧 Job `01M4XHR2PY2C2Q90DEYYHGMEPT`、`01M4XJ95C4BP9A58DHDXV262F4` 的具体提供商错误未恢复，本次没有复现 `AI_PROVIDER_INTERNAL`，不宣称其历史根因已修复，也没有据此改音色大小写、endpoint 或自动重试策略。正式安装包的修复后回归为 NOT-VERIFIED；未重新发布、准入或执行 Catalog 验收。
 
+### 原失败 Job 的继续调查（2026-10-15）
+
+恢复了既有验收会话中直接读取的首个 Runtime Job 快照，以及两个仍保留的 App 任务。首个 Job `01M4XHR2PY2C2Q90DEYYHGMEPT` 的有效请求为“晨光照亮河面，白鹭掠过柳枝。新的一天，从宁静开始。”、preset `cherry`、`wav`、timing `NONE`、空 defaults。捕获的连接 `01KYSSQ09S29SVRSGWZW5ZNQRQ` 使用 `ws-x7cmaz2zj808divy.cn-beijing.maas.aliyuncs.com/compatible-mode/v1`。两个 App 任务的文本、声音、速度/音量 1、配置修订号 12 和连接/模型选择完全相同；第二个 Job `01M4XJ95C4BP9A58DHDXV262F4` 的逐 Job Runtime endpoint 快照未恢复，不能把 App 配置身份当成该快照。请求没有速度/音量字段是默认值省略，不是 preset 丢失。
+
+上一轮成功的开发请求实际使用另一个连接 `01KZEQDE8M9HPA9VQYKBDM0J71`、传统 `dashscope.aliyuncs.com` 域名和不同文本，不能代替历史失败的同条件对照。本轮通过 Home 公开连接编辑和 App AI 配置，临时只切换开发连接的 endpoint；API key 保持不变，使用原失败文本进行以下真实 App 对照：
+
+| Endpoint 主机 | 新 Job | 提供商响应 |
+| --- | --- | --- |
+| 历史 workspace 主机 | `01M4XTW5RX0JYQDAFY0T9GB8F5` | HTTP 500，`InternalError`，`Unexpected error: UNKNOWN`；request ID `ec40b0a8-2772-9e21-a6ee-aa12ed699940` |
+| `dashscope.aliyuncs.com` | `01M4XTXDBZBJ3P609PFEBDMF8C` | HTTP 200；request ID `20edf5e7-3998-9db3-b4e3-64aca7405fa5`，App 完整预览成功 |
+
+两次新 Job 的捕获 spec 和 defaults 完全相同。Runtime 在两个主机上均去掉 compatible-mode 路径，再请求 `/api/v1/services/aigc/multimodal-generation/generation`。`adapter_dashscope.go`、`adapter_dashscope_tts.go`、`media_http_helpers.go` 和 `backend_errors.go` 与 `nimi/v0.2.4` tag 无差异，临时诊断只读取响应字段，不修改请求或结果。[Qwen-TTS API](https://help.aliyun.com/zh/model-studio/qwen-tts-api) 使用传统域名；[官方非实时合成指南](https://help.aliyun.com/en/model-studio/non-realtime-tts-user-guide) 明确区分 Qwen-TTS 与 Qwen-Audio-TTS/CosyVoice 的 endpoint。由此确认当前存在 workspace endpoint 相关的真实提供商 500，不归因于 WAV、`cherry` 大小写、文本或整个连接不可用。
+
+历史证明范围仍有限：Runtime terminal Job 的保留期为 30 分钟，原两条记录已不在当前 store；当时的 HTTP 响应正文没有持久化，Job 错误投影只保留 action hint/retryable，丢弃了 HTTP status。现存快照只能确认首个 Job 的 canonical `AI_PROVIDER_INTERNAL`，不能恢复原始 provider request ID、错误正文或供应商内部故障原因。更早的 5.20 秒成功还使用过同一正式连接，因此不宣称该 workspace 对 Qwen3 TTS 永久不可用。新对照是高度相关的机制证据，不是原两次响应的替身。百炼控制台当前未登录，供应商侧历史查询待账号登录；未发送客服消息。
+
+开发 endpoint 已恢复；临时响应诊断已移除，原 App 依赖与锁文件恢复。正式安装版连接、发布、Registry 与 Catalog 状态未修改。
+
 ## Catalog 准入与验收（2026-10-14 至 2026-10-15）
 
 用户明确批准现有 Windows x86_64 / stable 候选并接受既有记录限制后，Registry PR 104 完成最终检查并合入。正式 Home 已从 Catalog 下载、校验并安装 0.1.0；Catalog 来源实例启动并连接 Nimi Host。AI 配置保留 Deepseek V4 Flash、Qwen3 TTS Flash 与本机 Whisper；Catalog 项目存储与本地导入版独立，旧数据保留。
