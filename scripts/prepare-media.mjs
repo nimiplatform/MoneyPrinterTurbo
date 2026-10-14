@@ -5,6 +5,7 @@ import { access, copyFile, cp, mkdir, readFile, rm, writeFile } from 'node:fs/pr
 import path from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
+import { mediaUv, setupMedia } from './setup-media.mjs';
 const root = path.resolve(import.meta.dirname, '..');
 const cache = path.join(root, '.nimi/local/media-build');
 async function run(command, args, cwd = root, env = process.env) {
@@ -79,13 +80,11 @@ export async function prepareMedia() {
     path.join(root, 'resource/fonts/NotoSansCJKsc-Regular.otf'),
   );
   await download(fontBase + '/LICENSE', path.join(root, 'licenses/Noto-OFL.txt'));
-  await run('python', ['-m', 'uv', 'sync', '--frozen', '--python', '3.14.4']);
+  setupMedia();
   await run(path.join(root, '.venv/Scripts/python.exe'), [
     path.join(root, 'scripts/generate-icon.py'),
   ]);
-  await run('python', [
-    '-m',
-    'uv',
+  await run(mediaUv, [
     'export',
     '--frozen',
     '--no-dev',

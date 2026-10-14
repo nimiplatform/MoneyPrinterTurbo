@@ -306,8 +306,8 @@ async function* streamLocalAppTextEvents(
     let started = false;
     let textItemOpened = false;
     for await (const event of subscription) {
-      // This one-turn text surface has no follow-up turn to carry opaque state into.
-      if (event.type === 'reasoning-continuity') continue;
+      // This one-turn script surface displays final text, not reasoning summaries.
+      if (event.type === 'reasoning-continuity' || event.type === 'reasoning-summary') continue;
       if (!started) {
         started = true;
         yield {

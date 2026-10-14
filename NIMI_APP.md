@@ -4,6 +4,8 @@
 
 ## 当前可用范围
 
+2026-10-14 发布准备：正式依赖已对齐 SDK 0.21.0、Kit/native 0.19.3、App Tools 0.12.0 和 Electron 44，适配正式 Nimi 服务。Windows 构建、生产格式打包、类型检查、11 个业务测试与 120 个媒体测试通过。Python/uv 初始化已纳入项目脚本，CI 不再依赖作者机的现成环境；安装包真实创作和公开下载尚待本轮验收。
+
 Windows x86_64 开发 App 已由 Desktop 监督运行。已实际完成主题生成脚本、自动配音、带真实 words 的转写、AI 图片素材和 9:16 成片；另完成 16:9 无配音两条批量、1:1 图片/视频混合素材与上传配音、逐词字幕及弹跳动效。实际输出均可通过受控资产 URL 播放，媒体参数由 FFprobe 核对。完整配音预览、script/audio/subtitle 阶段结果、字幕校对及复用音频/时间轴重新成片也已运行。完整预览复用已核对无新增 TTS Job，实际音频字节和时长一致；55秒上传音频已运行两段真实转写，保留原始结果，offset只加一次。
 
 创作页提供脚本改写、关键词顺序、画幅、速度、fit、转场、句级/逐词字幕与样式、批量及 stop_at。记录页保留参数、原始转写、words、SRT、素材、配音、成片和 Job ID。重开时未完成队列暂停，只有明确继续才恢复业务调度；无 ID 的不确定提交不会盲目重做。
@@ -24,7 +26,7 @@ Host 自动化已实际完成创建、查询、分页、取回完整成片，以
 
 ## 开发
 
-Node 24、pnpm 10.34.5；媒体开发与 Windows bundle 使用 Python 3.14.4、锁定 media wheels、FFmpeg/FFprobe 9.0.1 和 Noto Sans CJK SC。完整本地平台 tarballs 由 pnpm-workspace overrides 与 lock 固定，不使用 Nimi 源码目录依赖。
+Node 24、pnpm 10.34.5；媒体开发与 Windows bundle 使用 Python 3.14.4、锁定 media wheels、FFmpeg/FFprobe 9.0.1 和 Noto Sans CJK SC。平台依赖使用正式发布的 SDK 0.21.0、Kit/native 0.18.1、App Tools 0.11.4、Nimi Coding 0.6.5 与 Electron 44，由 lock 固定 registry 解析，不需要外部平台归档或 Nimi 源码目录依赖。
 
 ```powershell
 pnpm install --frozen-lockfile
