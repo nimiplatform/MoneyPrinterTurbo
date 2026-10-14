@@ -2,7 +2,15 @@
 
 审计日期：2026 年 10 月 2 日。面向本 fork 的实施 worker 和后续评审。本文件是版本限定的审计与方案，不是 Nimi 产品权威，也不表示方案已经获批、功能已经实现或发布已经完成。
 
-## 平台包升级（2026-10-11）
+## 正式 Windows 包验收（2026-10-14）
+
+0.1.0 已通过 tag 工作流发布；实际下载包 SHA-256 为 `009d8ce75ffcb0a472a9967ec143ff25b98cb87c301df6e9b7a77be07f0d1309`。通过正式 Nimi 0.2.4 Home 本地导入并启动，SDK 0.21.0 / Kit-native 0.19.3 接入正式服务。Registry PR 104 检查通过，仍等待人工准入；本节不是 Catalog 安装声明。
+
+实际生成的脚本为“清晨河畔，柳枝轻拂水面。白鹭掠过，唤醒一河晨光。”，来自已配置的 Deepseek V4 Flash。Qwen3 TTS Flash / Cherry 完整配音预览生成并播放到 5.20 秒；新成片任务复用该预览，由本机 Whisper 生成真实逐词时间轴和两条字幕，再使用既有河畔图片合成 9:16 MP4。任务尾号 `6af1f9` 完成，播放器到达结尾；“打开文件”正式入口显示实际成片，FFprobe 核对 1080×1920、30 fps、H.264/AAC、5.20 秒、1,585,724 字节。副本保留在 `.nimi/local/acceptance/release-0.1.0-final.mp4`。正常退出后从 Home 重开，完成记录、配音预览、字幕和视频均保留，失败/暂停记录没有自动重放。
+
+本次保留的限制：MiMo Flash 的脚本请求返回 `ai-provider-rate-limited`，原无 ID 请求保持不确定状态，“显式继续”拒绝重放；没有将新 Deepseek 任务算作 MiMo 通过。本机 VoxCPM2 当前返回未配置，未重新准备环境。Qwen Audio 3.0 TTS Plus 的默认声音请求被拒绝（Job `01M4X002G9WDDC2YW3Q41G8VZS`）；公开 preset 列表提供的 `User Custom Voice` 也被拒绝（Job `01M4X0A0DQ4YHDR542QN7K88W7`）。目录中的 `user-custom` 是动态声音占位项，而非实际声音，这个 Nimi 选项投影问题需由共享 owner 修复，不在 App 内硬编码过滤。没有将占位音色、声音创建、库存素材服务或 Upload-Post 标为通过；没有发布社交内容。
+
+## 历史平台包升级（2026-10-11）
 
 当前 checkout 使用正式 SDK 0.21.0、Kit/native 0.18.1、App Tools 0.11.4 与 Nimi Coding 0.6.5；已移除核心包本地覆盖并更新锁文件。类型检查、生产单元测试、120 个媒体测试（134 个 subtests）、renderer/Host 构建和冻结锁验证通过。reasoning-summary 不会被当成正文完成，新增回归覆盖流事件顺序。
 
