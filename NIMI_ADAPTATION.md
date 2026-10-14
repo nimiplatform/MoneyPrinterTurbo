@@ -6,7 +6,7 @@
 
 独立于发布和 Registry，本次使用原开发注册、Desktop-supervised Electron 与 App 自身 CDP，复查 0.1.0 的云端配音。为匹配源码监督器，临时通过完整 tarball 使用 SDK 0.21.0、Kit/native 0.21.0、App Tools 0.13.1；验收后恢复原依赖声明及锁文件。Runtime 来自 Nimi 当前源码工作树，包含工作区原有的其他未提交修改；本次产品修复仅涉及 Dashscope 有限 ASR，修复 checkpoint 为 Nimi `b2368a2d8`，不把相同版本号视为正式安装包的同源证明。
 
-通过公开 AI 配置重新选择原 Dashscope 连接上的 `qwen3-tts-flash`。完整预览 Job `01M4XSH4MWFMEP8FNGREFATGX7` 实际请求为 preset `cherry` / WAV，得到 6.16 秒音频。增加一句脚本后走独立配音阶段，Job `01M4XSZRTGZ6KCSB25FQ3NHQ7S` 得到 9.04 秒 WAV；不是复用预览。两份音频均由 App 受控播放器播放到结尾，无解码错误。旧 Job `01M4XHR2PY2C2Q90DEYYHGMEPT`、`01M4XJ95C4BP9A58DHDXV262F4` 的具体提供商错误未恢复，本次没有复现 `AI_PROVIDER_INTERNAL`，不宣称其历史根因已修复，也没有据此改音色大小写、endpoint 或自动重试策略。正式安装包的修复后回归为 NOT-VERIFIED；未重新发布、准入或执行 Catalog 验收。
+第一轮通过公开 AI 配置重新选择既有开发 Dashscope 连接上的 `qwen3-tts-flash`。完整预览 Job `01M4XSH4MWFMEP8FNGREFATGX7` 实际请求为 preset `cherry` / WAV，得到 6.16 秒音频。增加一句脚本后走独立配音阶段，Job `01M4XSZRTGZ6KCSB25FQ3NHQ7S` 得到 9.04 秒 WAV；不是复用预览。两份音频均由 App 受控播放器播放到结尾，无解码错误。该轮未复现历史 `AI_PROVIDER_INTERNAL`；后续发现其连接与文本不同，因此不将这些成功替代原失败的根因证据。继续调查及供应商侧历史核对见下文。正式安装包的修复后回归为 NOT-VERIFIED；未重新发布、准入或执行 Catalog 验收。
 
 ### 原失败 Job 的继续调查（2026-10-15）
 
@@ -21,7 +21,16 @@
 
 两次新 Job 的捕获 spec 和 defaults 完全相同。Runtime 在两个主机上均去掉 compatible-mode 路径，再请求 `/api/v1/services/aigc/multimodal-generation/generation`。`adapter_dashscope.go`、`adapter_dashscope_tts.go`、`media_http_helpers.go` 和 `backend_errors.go` 与 `nimi/v0.2.4` tag 无差异，临时诊断只读取响应字段，不修改请求或结果。[Qwen-TTS API](https://help.aliyun.com/zh/model-studio/qwen-tts-api) 使用传统域名；[官方非实时合成指南](https://help.aliyun.com/en/model-studio/non-realtime-tts-user-guide) 明确区分 Qwen-TTS 与 Qwen-Audio-TTS/CosyVoice 的 endpoint。由此确认当前存在 workspace endpoint 相关的真实提供商 500，不归因于 WAV、`cherry` 大小写、文本或整个连接不可用。
 
-历史证明范围仍有限：Runtime terminal Job 的保留期为 30 分钟，原两条记录已不在当前 store；当时的 HTTP 响应正文没有持久化，Job 错误投影只保留 action hint/retryable，丢弃了 HTTP status。现存快照只能确认首个 Job 的 canonical `AI_PROVIDER_INTERNAL`，不能恢复原始 provider request ID、错误正文或供应商内部故障原因。更早的 5.20 秒成功还使用过同一正式连接，因此不宣称该 workspace 对 Qwen3 TTS 永久不可用。新对照是高度相关的机制证据，不是原两次响应的替身。百炼控制台当前未登录，供应商侧历史查询待账号登录；未发送客服消息。
+用户登录后，已在[北京地域模型审计日志](https://bailian.console.aliyun.com/cn-beijing/model/logs/auditLog)只读恢复两个历史时间点的服务器记录。按模型、时间、同一 API Key 标识及调用顺序关联如下；Nimi 当时未保存 provider request ID，因此不是依赖跨系统共享 ID 的直接 join。
+
+| 原 Nimi Job | 百炼 Request ID | 百炼时间（Asia/Shanghai） | HTTP / 服务器耗时 |
+| --- | --- | --- | --- |
+| `01M4XHR2PY2C2Q90DEYYHGMEPT` | `c586b31d-6030-92a5-b352-a9eb0384dbad` | 2026-10-14 23:50:57.963 | 500 / 26ms |
+| `01M4XJ95C4BP9A58DHDXV262F4` | `e274bab6-8b4d-9e39-a6cf-c65a765feba3` | 2026-10-15 00:00:17.692 | 500 / 29ms |
+
+两条审计 JSON 均记录 `workspace_id=ws-x7cmaz2zj808divy`、`region=cn-beijing`、`protocol=HTTP`、`model=qwen3-tts-flash`；与本轮 500/200 对照使用同一 API Key 标识（未读取或输出完整 key）。因此历史失败确有供应商侧 HTTP 500，不是 Runtime 将成功音频解析成失败。审计字段不含实际 host/path，不能由 workspace_id 补造第二个 Job 的 endpoint 快照。
+
+仍未恢复的内容有明确边界：Runtime terminal Job 保留期为 30 分钟，原两条记录已不在当前 store；当时的 HTTP 响应正文没有持久化，Job 错误投影丢弃 HTTP status。百炼审计日志仅有元数据，历史两条的错误码栏为空；推理日志页面明确显示“推理日志未开启”。因此原始响应正文、原始 provider error code/message 和供应商内部异常仍未知，不能把本轮 `InternalError / Unexpected error: UNKNOWN` 写成历史原文。可确认的是历史服务器 500，以及当前同文本/同凭据下可复现的 workspace endpoint 相关失败；更早的 5.20 秒成功使用过同一正式连接，也不能据此断言该 workspace 永久不支持 Qwen3 TTS。未开启推理日志、未变更控制台配置、未发送客服消息；进一步追查供应商内部原因可使用上表 Request ID。
 
 开发 endpoint 已恢复；临时响应诊断已移除，原 App 依赖与锁文件恢复。正式安装版连接、发布、Registry 与 Catalog 状态未修改。
 
