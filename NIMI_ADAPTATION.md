@@ -2,7 +2,15 @@
 
 审计日期：2026 年 10 月 2 日。面向本 fork 的实施 worker 和后续评审。本文件是版本限定的审计与方案，不是 Nimi 产品权威，也不表示方案已经获批、功能已经实现或发布已经完成。
 
-## Dashscope 媒体诊断回归（2026-10-15，开发环境）
+## Dashscope 协议路由修复验收（2026-10-15）
+
+Nimi `604adac4a` 在 Remote ExecutionHost 中修复 Qwen/Qwen3 非实时 TTS 的官方 workspace endpoint 组合。北京与新加坡分别使用同地域的 Qwen-TTS 原生域名；不会在失败后换域名重试，也不改变 App 请求、保存的 Connector 或模型选择。Qwen Audio 3.0、ASR、声音创建与自定义代理不走该映射；产品语义以 Nimi 新增的 `dashscope-speech-endpoint-materialization` 权威规则为准。
+
+原开发注册通过匹配产品的 CDP 实测，连接保持历史北京 workspace endpoint，原失败文本 / `cherry` / WAV 的完整预览 Job `01M4XW15D6VR297V66ZNEBX9VK` 成功并播放完 5.76 秒。增加一句文本后的独立配音 Job `01M4XW2W2M7RNA1835WTW7AADZ` 成功并播放完 7.68 秒，没有复用预览。两项 Job 的捕获 Connector 均仍为 workspace 地址，App 无 provider 绕过或路由硬编码。
+
+`remoteexecution` 与 `nimillm` 两个包的完整测试通过；新增回归覆盖地域映射、Qwen Audio/声音生命周期保持原路由、自定义代理和伪装域名。权威 fmt/check/compile/diff/impact 通过。VoiceStudio 同连接的 Qwen Audio 3.0 声音创建、合成及原 WAV 转写回归也通过，详见其 README。本轮沿用完整本地 SDK 0.21.0、Kit/native 0.21.0、App Tools 0.13.1 包匹配源码 Runtime；原 App 依赖/锁文件与临时开发 endpoint 已恢复。Runtime 构建还包含工作区既有的无关修改，不把它描述为正式发布二进制。北京真实路径通过；新加坡真实调用和正式安装包更新后验收为 NOT-VERIFIED。未发布、未重跑 Registry/Catalog。
+
+## 此前 Dashscope 媒体诊断回归（2026-10-15，开发环境）
 
 独立于发布和 Registry，本次使用原开发注册、Desktop-supervised Electron 与 App 自身 CDP，复查 0.1.0 的云端配音。为匹配源码监督器，临时通过完整 tarball 使用 SDK 0.21.0、Kit/native 0.21.0、App Tools 0.13.1；验收后恢复原依赖声明及锁文件。Runtime 来自 Nimi 当前源码工作树，包含工作区原有的其他未提交修改；本次产品修复仅涉及 Dashscope 有限 ASR，修复 checkpoint 为 Nimi `b2368a2d8`，不把相同版本号视为正式安装包的同源证明。
 
