@@ -4,6 +4,8 @@
 
 ## Dashscope 协议路由修复验收（2026-10-15）
 
+对 `604adac4a` 的追加审查发现 workspace 作用域遗漏：改写到共享主机后没有携带原 workspace，且 TTS 适配器未转发 Host 请求头。Nimi `e35db098d` 将捕获 hostname 中的 workspace 作为 `X-DashScope-WorkSpace` 送到 Qwen TTS 推理请求，按[官方 MultiModalConversation SDK](https://github.com/dashscope/dashscope-sdk-python/blob/main/dashscope/aigc/multimodal_conversation.py)及其 BaseApi 的 workspace 语义保留显式作用域。新增 HTTP 回归在修复前失败、修复后通过，同时断言音频下载不收到 Authorization 或 workspace 头。`remoteexecution`/`nimillm` 全包测试与权威检查通过；地域映射、自定义 endpoint、Qwen Audio 与声音创建未发现其他回归。本次新增请求头的真实 App 回归为 NOT-VERIFIED：共享开发 Runtime 正被另一会话用于离线退出验收，未抢占或重启；下列此前真实结果只保留原验证范围。未发布新版本。
+
 Nimi `604adac4a` 在 Remote ExecutionHost 中修复 Qwen/Qwen3 非实时 TTS 的官方 workspace endpoint 组合。北京与新加坡分别使用同地域的 Qwen-TTS 原生域名；不会在失败后换域名重试，也不改变 App 请求、保存的 Connector 或模型选择。Qwen Audio 3.0、ASR、声音创建与自定义代理不走该映射；产品语义以 Nimi 新增的 `dashscope-speech-endpoint-materialization` 权威规则为准。
 
 原开发注册通过匹配产品的 CDP 实测，连接保持历史北京 workspace endpoint，原失败文本 / `cherry` / WAV 的完整预览 Job `01M4XW15D6VR297V66ZNEBX9VK` 成功并播放完 5.76 秒。增加一句文本后的独立配音 Job `01M4XW2W2M7RNA1835WTW7AADZ` 成功并播放完 7.68 秒，没有复用预览。两项 Job 的捕获 Connector 均仍为 workspace 地址，App 无 provider 绕过或路由硬编码。
