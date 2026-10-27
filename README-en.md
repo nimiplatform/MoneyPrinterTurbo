@@ -2,7 +2,7 @@
 
 Create short videos in Nimi Desktop using a topic or script, local/stock/AI visuals, narration, timed captions and music. The App saves MP4 outputs and inspectable stage assets in Nimi App storage.
 
-Read [NIMI_APP.md](NIMI_APP.md) for requirements and the actual available scope, [NIMI_ADAPTATION.md](NIMI_ADAPTATION.md) for implementation and acceptance status, and [the Host automation guide](docs/skill/SKILL.md) for product operations. Unrun paths remain NOT-VERIFIED.
+Read [NIMI_DEVELOPMENT.md](NIMI_DEVELOPMENT.md) for requirements and the actual available scope, [NIMI_ADAPTATION.md](NIMI_ADAPTATION.md) for implementation and acceptance status, and [the Host automation guide](docs/skill/SKILL.md) for product operations. Unrun paths remain NOT-VERIFIED.
 
 Nimi owns AI configuration and credentials. The App owns stock-media and Upload-Post business accounts. Use the Desktop-supervised Electron Host. The upstream Streamlit, standalone API/Docker/CLI and Python AI provider entry points have been retired.
 

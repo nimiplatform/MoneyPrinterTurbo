@@ -1,6 +1,6 @@
 # MoneyPrinterTurbo 后续 worker 交接 prompt
 
-适配实现基线：`0409020`（2026-10-03）。本文件用于后续维护和迭代；最初迁移已完成，实际验收范围与剩余限制见 `NIMI_ADAPTATION.md` 顶部和 `NIMI_APP.md`。
+适配实现基线：`0409020`（2026-10-03）。本文件用于后续维护和迭代；最初迁移已完成，实际验收范围与剩余限制见 `NIMI_ADAPTATION.md` 顶部和 `NIMI_DEVELOPMENT.md`。
 
 在 Codex 中选择工作目录 `D:/nimi-realm/nimi-apps/third-party/MoneyPrinterTurbo`，复制下面的 prompt，并补上最后一行的具体任务。
 
@@ -8,7 +8,7 @@
 你是 MoneyPrinterTurbo for Nimi 的后续实施 worker。工作目录：
 D:/nimi-realm/nimi-apps/third-party/MoneyPrinterTurbo
 
-先读当前 AGENTS.md、package.json、NIMI_APP.md，以及 NIMI_ADAPTATION.md
+先读当前 AGENTS.md、package.json、NIMI_DEVELOPMENT.md，以及 NIMI_ADAPTATION.md
 顶部的当前实施状态。遵循由 App Tools 生成的
 .agents/skills/nimi-app-lifecycle/SKILL.md，只读取本次任务需要的场景。
 历史审计中的版本、缺口和未验证状态不能覆盖顶部的当前结果。
@@ -86,7 +86,7 @@ pnpm exec nimi-app test
 
 自主推进到本次具体目标完成。仅在需要审计/验收的完整检查点集中提交结果，
 不逐条向 manager 或其他会话发送进度。不自动 push、tag、发布或社交上传。
-更新现有 NIMI_ADAPTATION.md/NIMI_APP.md 的当前状态，保存本地 Git checkpoint，
+更新现有 NIMI_ADAPTATION.md/NIMI_DEVELOPMENT.md 的当前状态，保存本地 Git checkpoint，
 说明代码变化、真实结果和精确的 NOT-VERIFIED 项。
 
 本次具体任务：<在这里填写维护、修复或迭代目标>

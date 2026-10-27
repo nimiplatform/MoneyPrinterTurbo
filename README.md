@@ -1,8 +1,14 @@
+Current development dependencies are SDK 0.22.2, Kit/native 0.22.1, App Tools 0.14.0 and Nimi Coding 0.7.0. The checked-in pnpm lock resolves these packages from the public registry. Run `pnpm install --frozen-lockfile`, `pnpm exec nimi-app check`, then `pnpm dev` with a matching source-built Nimi Runtime and Home. App versions and published App releases are unchanged. Earlier versioned notes retain their original acceptance scope. Home uses the App-owned root `NIMI_APP.md`; this README remains developer documentation.
+
+Upgrade verification: public-registry installation, frozen-lockfile installation, App Tools checks and the applicable type/Host build checks passed. The supervised macOS UI connects to Nimi, and media-worker protocol tests pass. Actual video composition remains NOT-VERIFIED on macOS: the existing media bundle and its Python/FFmpeg paths currently target Windows x64.
+
+[App introduction and usage](NIMI_APP.md)
+
 # MoneyPrinterTurbo for Nimi
 
 本 fork 在 Nimi Desktop 中制作短视频。输入主题或手工脚本，使用本地、库存或 Nimi AI 素材，选择配音、字幕、配乐与画幅，保存真实 MP4 和阶段产物。
 
-使用条件、已运行范围与开发命令见 [NIMI_APP.md](NIMI_APP.md)；实施与验收状态见 [NIMI_ADAPTATION.md](NIMI_ADAPTATION.md)。Host 自动化操作见 [docs/skill/SKILL.md](docs/skill/SKILL.md)。未运行的条件性路径明确保留 NOT-VERIFIED。
+使用条件、已运行范围与开发命令见 [NIMI_DEVELOPMENT.md](NIMI_DEVELOPMENT.md)；实施与验收状态见 [NIMI_ADAPTATION.md](NIMI_ADAPTATION.md)。Host 自动化操作见 [docs/skill/SKILL.md](docs/skill/SKILL.md)。未运行的条件性路径明确保留 NOT-VERIFIED。
 
 AI 路由、模型和凭据通过 Nimi 配置。Pexels/Pixabay/Coverr 与 Upload-Post 业务账户在 App 中管理。唯一产品入口是 Desktop 监督的 Electron Host；原 Streamlit、独立 API、Docker、裸 Python CLI 与 Python AI provider 已退役。
 

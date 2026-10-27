@@ -102,7 +102,7 @@ Nimi `604adac4a` 在 Remote ExecutionHost 中修复 Qwen/Qwen3 非实时 TTS 的
 
 ## 已确认范围与审计基线
 
-以下各节保留2026-10-02初始化前后的历史审计语境；其中“当前/已有/缺口”指当时基线。实施后的结果与仍未验证的路径以本文件顶部“当前实施状态”和NIMI_APP.md为准，不能把历史缺口或工程初始化结果当作平台现状。
+以下各节保留2026-10-02初始化前后的历史审计语境；其中“当前/已有/缺口”指当时基线。实施后的结果与仍未验证的路径以本文件顶部“当前实施状态”和NIMI_DEVELOPMENT.md为准，不能把历史缺口或工程初始化结果当作平台现状。
 
 用户已确认：**以 Nimi Desktop 为主，自动化入口跟随 Host。** 不要求保留独立 Docker 服务、远程 API 和脱离 Desktop 的裸 CLI 作为最终交付形态。脚本生成、阶段产物、批量任务等自动化能力仍须保留。
 
@@ -208,7 +208,7 @@ OpenMontage 可以复用的思路包括 Python 媒体算法封装、子进程资
 - 旧 Host 没有当前要求的第一步 `configureNimiElectronAppHostProfile(app)` 和新 session invalidation wiring；应使用同版本工具生成的 Host。
 - 旧转写 consumer 只读 `transcriptionText`，示例音频 bytes 使用 `number[]`；当前应消费 typed words，media bytes 使用 `Uint8Array`。
 - 旧任务不确定提交策略没有等同于所有操作持久恢复。本次须按具体 Job 的实际恢复能力设计。
-- `NIMI_APP.md` 内 app-tools 0.5.3 与 package.json 的 ^0.7.5 不一致；SDK ^0.12.0 / Kit ^0.8.0 也不是本次推荐组合。
+- `NIMI_DEVELOPMENT.md` 内 app-tools 0.5.3 与 package.json 的 ^0.7.5 不一致；SDK ^0.12.0 / Kit ^0.8.0 也不是本次推荐组合。
 - 其 720p 输出、工作流目录和曾验证的切片不能覆盖 MoneyPrinterTurbo 的画幅、字幕动效、库存素材、批量或发布能力；不修改参考仓来满足本任务。
 
 ## 任务、配置与资产设计
@@ -325,7 +325,7 @@ reference 的实际失败说明：App Tools 0.11.4 在 existing adoption/check �
 - **E7 独立演绎缺口**：`app/services/voice.py:2961` 附近 VoxCPM reference/prompt_audio/prompt_text；`../../../nimi/sdks/typescript/core/app/local-app-runtime-platform-ai.ts:176` TTS 闭集；`../../../nimi/runtime/internal/capabilitydriver/voxcpm_speech.go:260` 明确拒绝非默认 voice 和多种 synthesis options。
 - **E8 自动化**：`../../../nimi/sdks/typescript/core/app/local-app-runtime-platform-integration.ts:24` 起的 provider methods、operation effect/retry/schema 校验；`../../../nimi/kit/shell/electron/README.md:74` Host services。
 - **工具与当前语义**：`../../../nimi/app-tools/package.json`、`lib/app-dependency-combinations.mjs:11`、`lib/app-project-lifecycle.mjs:1371`；完整 P-ARCH-001a outgoing context 查询成功；当前 `platform/app-ecosystem.authority.yaml` 的 P-SCAF-018d，以及 `platform/governance-release.authority.yaml` 的 P-GOV-026 positioning/owner-boundary。最初以单文件进行的失败 authority 查询未用于结论。
-- **参考 App**：`../OpenMontage/src-electron/main.ts`、`media-runtime.ts`、`src/production/generation.ts`、`transcription.ts`、`package.json`、`NIMI_APP.md`；其历史报告仅作为报告过的切片参考，没有本轮复验。
+- **参考 App**：`../OpenMontage/src-electron/main.ts`、`media-runtime.ts`、`src/production/generation.ts`、`transcription.ts`、`package.json`、`NIMI_DEVELOPMENT.md`；其历史报告仅作为报告过的切片参考，没有本轮复验。
 - **公开来源**：[nimiplatform fork](https://github.com/nimiplatform/MoneyPrinterTurbo) 确认 fork 与产品来源；具体技术结论以固定本地代码为主，公开页面不代替代码和真实 App 验收。
 
 原 manager 审计阶段所有 MoneyPrinterTurbo 产品路径均未运行；这是历史交接边界。当前 worker 运行与未验证范围以文首当前实施状态为准。

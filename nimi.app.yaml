@@ -21,7 +21,6 @@ storage_policy:
 metadata:
   summary: Create short videos with scripts, narration, aligned subtitles and local or stock footage.
   icon: assets/app-icon.png
-  readme: NIMI_APP.md
   release_notes: RELEASE_NOTES.md
 local_development:
   electron:

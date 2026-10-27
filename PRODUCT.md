@@ -1,6 +1,6 @@
 # MoneyPrinterTurbo for Nimi
 
-MoneyPrinterTurbo 面向制作中文短视频的创作者：从主题或手工脚本出发，选择素材、配音、字幕与配乐，查看阶段结果并导出成片。当前产品以 Nimi Desktop 监督的 Electron Host 为入口，自动化共用该 Host。实际可用条件与验收范围见 [NIMI_APP.md](NIMI_APP.md)，此文件只记录界面方向。
+MoneyPrinterTurbo 面向制作中文短视频的创作者：从主题或手工脚本出发，选择素材、配音、字幕与配乐，查看阶段结果并导出成片。当前产品以 Nimi Desktop 监督的 Electron Host 为入口，自动化共用该 Host。实际可用条件与验收范围见 [NIMI_DEVELOPMENT.md](NIMI_DEVELOPMENT.md)，此文件只记录界面方向。
 
 ## 创作工作台
 

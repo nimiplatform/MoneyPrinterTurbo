@@ -207,6 +207,7 @@ try {
     recursive: true,
   });
 
+  await cp(path.join(appRoot, 'assets', 'native'), path.join(productionSourceRoot, 'assets', 'native'), { recursive: true });
   const packagePaths = await packager({
     dir: productionSourceRoot,
     platform: NATIVE_PLATFORM,
@@ -224,7 +225,7 @@ try {
     // asar matches absolute paths with matchBase; a slash-free pattern matches file names,
     // because '**' does not cross the dot directories of this staging or the App's path.
     asar: { unpack: '*.{node,dylib,dll}' },
-    icon: path.join(appRoot, 'assets', MACOS_BUILD ? 'app-icon.png' : 'app-icon.ico'),
+    icon: path.join(appRoot, 'assets', 'native', MACOS_BUILD ? 'macos.icns' : 'windows.ico'),
     extraResource: [...(MACOS_BUILD ? [path.join(stagingRoot, 'nimi-native')] : []), mediaBundle],
     prune: false,
     quiet: true,
