@@ -2,6 +2,8 @@
 * text=auto
 LICENSE -text
 .github/workflows/nimi-app-release.yml text eol=lf
+AGENTS.md text eol=lf
+.agents/skills/nimi-app-lifecycle/** text eol=lf
 
 # Binary assets
 *.mp3 binary
