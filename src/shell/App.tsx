@@ -1,6 +1,8 @@
 import { WorkbenchRuntimeGate } from '../workbench-core/index.js';
 import { NimiToaster } from '@nimiplatform/kit/ui';
 import { Studio } from '../production/Studio.js';
+import { StudioPlatformProvider } from '../production/platform.js';
+import { nativeProductionPlatform } from './native-production.js';
 import {
   appTitle,
   clearTargetRuntimeGate,
@@ -19,7 +21,7 @@ export function App() {
         clear={clearTargetRuntimeGate}
         toErrorMessage={targetRuntimeGateErrorMessage}
       >
-        <Studio />
+        <StudioPlatformProvider platform={nativeProductionPlatform}><Studio /></StudioPlatformProvider>
       </WorkbenchRuntimeGate>
       <NimiToaster />
     </>

@@ -158,6 +158,7 @@ export type Task = {
   error?: string;
   warnings: string[];
   musicGeneration?: unknown;
+  previewResult?: { asset: MediaAsset; key: string; fullScript: boolean };
   publish?: { state: string; results?: unknown; error?: string };
 };
 export function narrationKey(p: ProductionParams, script: string, configRevision: string) {

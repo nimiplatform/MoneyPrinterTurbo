@@ -54,6 +54,7 @@ test('an oversized UTF-8 result and a rejected callback do not kill later calls 
     },
   } };
   automation = new HostAutomation(services, {
+    media: { paths: { scratchRoot: path.resolve('.nimi/local/test/integration') } },
     ready: Promise.resolve(), readTask: async () => ({ text: '雨'.repeat(400000) }),
     start: async () => { writes++; return { taskIds: ['created-once'] }; },
     listTasks: async () => ({ tasks: [], nextCursor: null }),

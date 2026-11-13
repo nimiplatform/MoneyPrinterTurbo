@@ -1,14 +1,19 @@
 import type { NimiElectronAppBusinessServices } from '@nimiplatform/kit/shell/electron/main';
 import type { ProductionController } from './production-controller.js';
+import { portableOperations } from './portable-operations.js';
+import { MediaUploads } from './media-upload.js';
+import path from 'node:path';
 const objectSchema = (properties: Record<string, unknown>, required: string[] = []) =>
   JSON.stringify({ type: 'object', properties, required, additionalProperties: false });
 export class HostAutomation {
   private active = true;
   error = '';
+  private uploads: MediaUploads;
   constructor(
     private services: NimiElectronAppBusinessServices,
     private controller: ProductionController,
   ) {
+    this.uploads = new MediaUploads(controller, path.join(controller.media.paths.scratchRoot, 'remote-imports'));
     void this.run();
   }
   private async run() {
@@ -21,6 +26,7 @@ export class HostAutomation {
         skill:
           'Create short videos through this running Host. Use list with cursor/limit for bounded task summaries, create with an exact parameter snapshot, task for details, and asset for bounded chunks of real stage outputs. cancel stops App scheduling and requests cancellation of known jobs. Never replay uncertain requests, assume queued tasks resumed after restart, or submit social uploads through this provider. App settings and AIConfig are managed in the App and Nimi.',
         operations: [
+          ...portableOperations,
           {
             name: 'create',
             description:
@@ -78,7 +84,7 @@ export class HostAutomation {
         ],
       });
       while (this.active) {
-        const poll = await this.services.integration.pollProvider({ waitMs: 1000 });
+        const poll = await this.services.integration.pollProvider({ waitMs: 25000 });
         if (!this.active) return;
         for (const call of poll.calls) {
           let result: unknown;
@@ -87,6 +93,16 @@ export class HostAutomation {
           try {
             const input = JSON.parse(call.inputJson);
             if (call.operation === 'create') result = await this.controller.start(input.params);
+            else if (call.operation === 'media.read') result = await this.controller.readMedia(input.relativePath, input.offset, input.length);
+            else if (call.operation === 'media.upload') result = await this.uploads.call(call.consumerRef, input);
+            else if (call.operation === 'preview.start') result = { taskId: (await this.controller.beginPreview(input.params, input.text)).taskId };
+            else if (call.operation === 'studio.snapshot') result = await this.controller.studioSnapshot(input.cursor, input.limit);
+            else if (call.operation === 'studio.settings') result = await this.controller.publicSettings();
+            else if (call.operation === 'studio.settings.save') result = await this.controller.saveSettings('creation', input.params);
+            else if (call.operation === 'resume') result = await this.controller.resume(input.id);
+            else if (call.operation === 'regenerate') result = await this.controller.regenerate(input.id);
+            else if (call.operation === 'cues.save') result = await this.controller.editCues(input.id, input.cues);
+            else if (call.operation === 'jobs') result = await this.controller.inspectJobs(input.id);
             else if (call.operation === 'cancel') result = await this.controller.cancel(input.id);
             else if (call.operation === 'asset') result = await this.controller.readArtifact(input.id, input.name, input.offset, input.length);
             else if (call.operation === 'list') result = await this.controller.listTasks(input.cursor, input.limit);
@@ -120,5 +136,6 @@ export class HostAutomation {
   }
   close() {
     this.active = false;
+    void this.uploads.close().catch(() => undefined);
   }
 }

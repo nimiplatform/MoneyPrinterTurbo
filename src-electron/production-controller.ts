@@ -21,6 +21,8 @@ import {
 import { assembleCues, toSrt, validateCues } from '../src/production/transcription.js';
 import { parseVisualTerms } from '../src/production/script.js';
 import { taskPage } from './task-list.js';
+import type { StudioSnapshot, BusinessReadiness } from '../src/production/task-summary.js';
+import { publicCreationParams } from '../src/production/task-summary.js';
 import { MediaRuntime, type Probe, type RenderResult } from './media-runtime.js';
 import { searchStock, publishVideo, pollPublication, validatePublication } from './business-services.js';
 const json = (value: unknown) => JSON.parse(JSON.stringify(value)) as JsonValue;
@@ -73,6 +75,14 @@ const mimeExt: Record<string, string> = {
   'application/json': 'json',
   'text/plain': 'txt',
 };
+export type MediaImport = Readonly<{ name: string; mediaType: string; size: number }>;
+export function mediaImport(name: unknown, mediaType: unknown, size: unknown): MediaImport {
+  if (typeof name !== 'string' || !name || name.length > 250 || typeof mediaType !== 'string'
+    || !mimeExt[mediaType] || !/^(image|audio|video)\//.test(mediaType)
+    || !Number.isSafeInteger(size) || Number(size) < 1 || Number(size) > 256 * 1024 * 1024)
+    throw new Error('请选择 256 MB 以内支持的媒体文件。');
+  return { name, mediaType, size: Number(size) };
+}
 function musicProfile(snapshot: Awaited<ReturnType<NimiElectronAppBusinessServices['aiConfig']['get']>>, p: ProductionParams) {
   const selected = snapshot.effectiveSelections.find((s) => s.capabilityContract === 'music.generate');
   const input = selected?.resource?.oneofKind === 'local' ? selected.resource.local.musicInput
@@ -155,6 +165,25 @@ export class ProductionController {
     this.assertLive();
     return taskPage(this.tasks.values(), cursor, limit);
   }
+  async studioSnapshot(cursor?: unknown, limit: unknown = 50): Promise<StudioSnapshot> {
+    await this.ready;
+    this.assertLive();
+    const tasks = [...this.tasks.values()];
+    return {
+      ...taskPage(tasks, cursor, limit), taskCount: tasks.length,
+      activeCount: tasks.filter(t => t.state === 'queued' || t.state === 'running').length,
+      voiceRevision: createHash('sha256').update(tasks.flatMap(t => t.jobs.filter(j => j.stage === 'voice-create' && j.state === 'consumed').map(j => j.id)).join(',')).digest('hex'),
+      media: this.media.availability(),
+    };
+  }
+  async publicSettings(): Promise<{ params: ProductionParams; businessStatus: BusinessReadiness }> {
+    const { params, business } = await this.settings();
+    this.assertLive();
+    return { params: publicCreationParams(params), businessStatus: {
+      pexels: Boolean(business.pexelsKey), pixabay: Boolean(business.pixabayKey), coverr: Boolean(business.coverrKey),
+      uploadPost: Boolean(business.uploadPostKey && business.uploadPostUser),
+    } };
+  }
   async readTask(id: string) {
     await this.ready;
     this.assertLive();
@@ -224,24 +253,30 @@ export class ProductionController {
     return { saved: true };
   }
   async importAsset(name: string, mediaType: string, bytes: Uint8Array): Promise<MediaAsset> {
+    if (!(bytes instanceof Uint8Array)) throw new Error('媒体内容格式无效。');
+    return this.importMediaStream(mediaImport(name, mediaType, bytes.byteLength), (async function* () { yield bytes; })());
+  }
+  async importMediaStream(input: MediaImport, body: AsyncIterable<Uint8Array>, signal?: AbortSignal): Promise<MediaAsset> {
     await this.ready;
-    this.assertLive();
-    if (
-      !(bytes instanceof Uint8Array) ||
-      !bytes.length ||
-      bytes.length > 256 * 1024 * 1024 ||
-      !mimeExt[mediaType] ||
-      !/^(image|audio|video)\//.test(mediaType)
-    )
-      throw new Error('请选择 256 MB 以内支持的媒体文件。');
-    if (typeof name !== 'string' || name.length > 250) throw new Error('文件名过长。');
+    this.assertLive(signal);
+    const owner = this;
+    async function* bounded() {
+      let received = 0;
+      for await (const chunk of body) {
+        owner.assertLive(signal);
+        received += chunk.byteLength;
+        if (received > input.size) throw new Error('媒体内容超过声明大小。');
+        yield chunk;
+      }
+      if (received !== input.size) throw new Error('媒体内容尚未完整传输。');
+    }
     const asset = await this.services.storage.assets.write({
-      relativePath: `imports/${randomUUID()}.${mimeExt[mediaType]}`,
-      body: bytes,
-      mediaType,
+      relativePath: `imports/${randomUUID()}.${mimeExt[input.mediaType]}`,
+      body: bounded(),
+      mediaType: input.mediaType,
     });
-    this.assertLive();
-    return { ...asset, name, mediaType };
+    this.assertLive(signal);
+    return { ...asset, name: input.name, mediaType: input.mediaType };
   }
   async start(input: unknown, seed?: Task) {
     await this.ready;
@@ -1224,6 +1259,9 @@ export class ProductionController {
     await this.save(t);
   }
   async preview(input: unknown, text: string) {
+    return (await this.beginPreview(input, text)).result;
+  }
+  async beginPreview(input: unknown, text: string) {
     await this.ready;
     const originalScript = String((input as ProductionParams).script || '').trim();
     text = text.trim();
@@ -1255,6 +1293,12 @@ export class ProductionController {
     const control = new AbortController();
     this.previewWork.set(t.id, control);
     await this.save(t);
+    const result = this.finishPreview(t, p, text, originalScript, aiIdentity(config), control);
+    // Remote clients read the persisted task; a lost connection must not repeat synthesis.
+    void result.catch(() => undefined);
+    return { taskId: t.id, result };
+  }
+  private async finishPreview(t: Task, p: ProductionParams, text: string, originalScript: string, identity: string, control: AbortController) {
     try {
       const a = await this.synthesize(t, text, control.signal);
       const source = await this.materialize(
@@ -1273,12 +1317,9 @@ export class ProductionController {
       t.audio = asset;
       t.state = 'complete';
       t.progress = 100;
+      t.previewResult = { asset, key: narrationKey(p, text, identity), fullScript: text === originalScript };
       await this.save(t);
-      return {
-        asset,
-        key: narrationKey(p, text, aiIdentity(config)),
-        fullScript: text === originalScript,
-      };
+      return t.previewResult;
     } catch (e) {
       if (this.alive) {
         t.state = control.signal.aborted ? 'stopped' : 'paused';
@@ -1357,7 +1398,18 @@ export class ProductionController {
       throw new Error('产物读取范围无效，单次最多32 KiB。');
     const asset = this.task(id).artifacts.find((a) => a.name === name);
     if (!asset) throw new Error('该文件不属于任务的已保存产物。');
-    const record = await this.services.storage.assets.stat(asset.relativePath);
+    return this.readMediaRange(asset.relativePath, asset.name, offset, length);
+  }
+  async readMedia(relativePath: string, offset = 0, length = 131072) {
+    await this.ready;
+    this.assertLive();
+    if (typeof relativePath !== 'string' || !/^(imports|tasks|previews)\/[a-zA-Z0-9_./-]+$/.test(relativePath) || relativePath.split('/').includes('..')
+      || !Number.isSafeInteger(offset) || offset < 0 || !Number.isSafeInteger(length) || length < 1 || length > 131072)
+      throw new Error('媒体读取范围无效。');
+    return this.readMediaRange(relativePath, path.posix.basename(relativePath), offset, length);
+  }
+  private async readMediaRange(relativePath: string, name: string, offset: number, length: number) {
+    const record = await this.services.storage.assets.stat(relativePath);
     this.assertLive();
     if (offset > record.sizeBytes) throw new Error('读取位置超过实际产物长度。');
     const take = Math.min(length, record.sizeBytes - offset);
@@ -1375,7 +1427,7 @@ export class ProductionController {
       if (received !== take) throw new Error('产物流未完整结束。');
     }
     this.assertLive();
-    return { name: asset.name, relativePath: record.relativePath, mediaType: asset.mediaType,
+    return { name, relativePath: record.relativePath, mediaType: record.mediaType,
       offset, length: received, totalSize: record.sizeBytes, sha256: record.sha256,
       dataBase64: Buffer.concat(chunks).toString('base64'), nextOffset: offset + received,
       eof: offset + received === record.sizeBytes };

@@ -71,10 +71,11 @@ void app.whenReady().then(async () => {
     assetMediaPlatform: { protocol, webRequest: session.defaultSession.webRequest, webContents },
     ipcMain,
     appCommandHandlers: {
-      'mpt.snapshot': async () => ({
-        ...(await requireController().snapshot()),
+      'mpt.snapshot': async ({ payload }) => ({
+        ...(await requireController().studioSnapshot(payload?.cursor, payload?.limit)),
         automationError: automation?.error || '',
       }),
+      'mpt.task': ({ payload }) => requireController().readTask(String(payload.id)),
       'mpt.settings': () => requireController().settings(),
       'mpt.settings.save': ({ payload }) =>
         requireController().saveSettings(payload.scope, payload.value),

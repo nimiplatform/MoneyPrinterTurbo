@@ -1,11 +1,12 @@
 app_id: moneyprinterturbo.studio
 display_name: MoneyPrinterTurbo
-version: 0.1.0
+version: 0.1.1
 profile: standalone
 manifest_role: submitted-input
 app_access:
   - runtime.consume
   - integration.provide
+  - integration.consume
 capability_contract_refs:
   - text.generate
   - text.embed
@@ -25,6 +26,14 @@ metadata:
 local_development:
   electron:
     renderer_origin: http://127.0.0.1:1450
+  web:
+    command: pnpm run dev:web-renderer
+    local:
+      origin: https://127.0.0.1:4481
+      redirect_uri: https://127.0.0.1:4481/
+      client_id: moneyprinterturbo.studio.web.dev
+  mobile:
+    command: pnpm run dev:android
 safety_profile:
   intended_audience: general
   content_descriptors: []

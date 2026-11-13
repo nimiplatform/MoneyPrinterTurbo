@@ -28,10 +28,10 @@ import {
   Captions,
   FolderOpen,
 } from 'lucide-react';
-import { invoke, openNimiLocalAppAssetMediaUrl } from '@nimiplatform/kit/shell/renderer/bridge';
 import { ModelConfigAIConfigSurface } from '@nimiplatform/kit/features/model-config';
 import type { NimiAIConfigSnapshot } from '@nimiplatform/sdk/ai';
-import { getNimiLocalAppClient } from '../shell/auth/local-app-client.js';
+import { useStudioPlatform } from './platform.js';
+import type { StudioSnapshot, TaskSummary, BusinessReadiness } from './task-summary.js';
 import {
   defaultParams,
   defaultBusiness,
@@ -68,9 +68,6 @@ const contracts = [
   'video.generate',
   'music.generate',
 ];
-async function command<T>(name: string, payload: Record<string, unknown> = {}): Promise<T> {
-  return (await invoke(`mpt.${name}`, payload)) as T;
-}
 function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   const control = isValidElement(children)
     ? cloneElement(children as ReactElement<{ 'aria-label'?: string }>, { 'aria-label': label })
@@ -84,12 +81,14 @@ function Field({ label, children, hint }: { label: string; children: ReactNode; 
   );
 }
 function MediaPlayer({ asset }: { asset: MediaAsset }) {
+  const { openMedia } = useStudioPlatform();
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
   useEffect(() => {
+    setUrl(''); setError('');
     let alive = true;
-    let handle: Awaited<ReturnType<typeof openNimiLocalAppAssetMediaUrl>> | undefined;
-    void openNimiLocalAppAssetMediaUrl(asset.relativePath)
+    let handle: Awaited<ReturnType<typeof openMedia>> | undefined;
+    void openMedia(asset)
       .then((result) => {
         handle = result;
         if (alive) setUrl(result.url);
@@ -102,7 +101,7 @@ function MediaPlayer({ asset }: { asset: MediaAsset }) {
       alive = false;
       void handle?.revoke();
     };
-  }, [asset.relativePath]);
+  }, [asset.relativePath, openMedia]);
   if (error) return <p role="alert">预览无法打开：{error}</p>;
   if (!url) return <p className="muted">加载预览…</p>;
   return asset.mediaType.startsWith('video/') ? (
@@ -124,6 +123,7 @@ function UploadInput({
   multiple?: boolean;
   onFiles: (files: File[]) => Promise<void>;
 }) {
+  const { connected } = useStudioPlatform();
   return (
     <label className="file-action">
       <Upload size={16} />
@@ -132,6 +132,7 @@ function UploadInput({
         type="file"
         accept={accept}
         multiple={multiple}
+        disabled={!connected}
         onChange={(event) => {
           const files = [...(event.currentTarget.files || [])];
           void onFiles(files);
@@ -143,14 +144,33 @@ function UploadInput({
 }
 type StudioView = 'create' | 'history' | 'settings' | 'ai';
 export function Studio() {
+  const platform = useStudioPlatform();
+  const { command, client } = platform;
   const [view, setView] = useState<StudioView>('create');
   const viewRef = useRef(view);
   viewRef.current = view;
   const [p, setP] = useState<ProductionParams>(structuredClone(defaultParams));
   const [business, setBusiness] = useState<BusinessSettings>({ ...defaultBusiness });
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<TaskSummary[]>([]);
+  const [current, setCurrent] = useState<Task>();
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [taskCount, setTaskCount] = useState(0);
+  const [activeCount, setActiveCount] = useState(0);
+  const [voiceRevision, setVoiceRevision] = useState('');
+  const [businessStatus, setBusinessStatus] = useState<BusinessReadiness>();
+  const settingsLoaded = useRef(false);
   const [selected, setSelected] = useState<string>('');
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
+  const loadedMore = useRef(false);
+  const resultPanel = useRef<HTMLElement>(null);
+  const showResults = () => resultPanel.current?.scrollIntoView({ block: 'start' });
+  const selectTask = (id: string) => {
+    setSelected(id);
+    if (matchMedia('(max-width: 700px)').matches) showResults();
+  };
   const [error, setError] = useState('');
+  const [readError, setReadError] = useState('');
   const [errorScope, setErrorScope] = useState<StudioView | null>(null);
   const [notice, updateNotice] = useState<{ message: string; scope: StudioView } | null>(null);
   const setNotice = (message: string, scope = view) => updateNotice({ message, scope });
@@ -174,11 +194,10 @@ export function Studio() {
   const [madeForKids, setMadeForKids] = useState(false);
   const [jobDetails, setJobDetails] = useState('');
   useEffect(() => setTermDraft(p.terms.join(', ')), [p.terms]);
-  const current = tasks.find((t) => t.id === selected);
-  const busyTasks = tasks.filter((t) => ['queued', 'running'].includes(t.state));
   const patch = <K extends keyof ProductionParams>(key: K, value: ProductionParams[K]) =>
     setP((previous) => ({ ...previous, [key]: value }));
   const act = useCallback(async (fn: () => Promise<void>) => {
+    if (!platform.connected) { setErrorScope(null); setError('PC 已断开。请先连接；未提交的编辑仍保留在此页面。'); return; }
     const origin = viewRef.current;
     setPending(true);
     setError('');
@@ -191,28 +210,58 @@ export function Studio() {
     } finally {
       setPending(false);
     }
-  }, []);
+  }, [platform.connected]);
   const refresh = useCallback(async () => {
-    const result = await command<{
-      tasks: Task[];
-      media: { available: boolean; missing: string[] };
-    }>('snapshot');
-    setTasks(result.tasks);
+    if (!settingsLoaded.current) {
+      const settings = await command<{ params: ProductionParams; business?: BusinessSettings; businessStatus?: BusinessReadiness }>('settings');
+      setP(settings.params);
+      if (settings.business) setBusiness(settings.business);
+      setBusinessStatus(settings.businessStatus);
+      settingsLoaded.current = true;
+    }
+    const result = await command<StudioSnapshot>('snapshot');
+    setTasks(previous => [...result.tasks, ...previous.filter(task => !result.tasks.some(next => next.id === task.id))]);
+    if (!loadedMore.current) setNextCursor(result.nextCursor);
+    setTaskCount(result.taskCount);
+    setActiveCount(result.activeCount);
+    setVoiceRevision(result.voiceRevision);
     setMedia(result.media);
-  }, []);
+    const id = selectedRef.current;
+    if (id) {
+      const task = await command<Task>('task', { id });
+      if (selectedRef.current === id) setCurrent(task);
+    }
+    setReadError('');
+  }, [command]);
+  const loadMore = async () => {
+    if (!nextCursor) return;
+    const page = await command<StudioSnapshot>('snapshot', { cursor: nextCursor, limit: 50 });
+    loadedMore.current = true;
+    setTasks(previous => [...previous, ...page.tasks.filter(task => !previous.some(saved => saved.id === task.id))]);
+    setNextCursor(page.nextCursor);
+  };
+  useEffect(() => {
+    if (!selected) { setCurrent(undefined); return; }
+    if (current?.id !== selected) setCurrent(undefined);
+    if (!platform.connected) return;
+    let active = true;
+    void command<Task>('task', { id: selected }).then(task => { if (active) setCurrent(task); }, cause => {
+      if (active) { setErrorScope(null); setError(String(cause)); }
+    });
+    return () => { active = false; };
+  }, [selected, command, platform.connected]);
   const refreshConfig = useCallback(async () => {
-    const result = await getNimiLocalAppClient().aiConfig.get();
+    const result = await client.aiConfig.get();
     setConfig(result);
     setRevision(result.revision);
-  }, []);
+  }, [client]);
   const speechSelection = config?.effectiveSelections.find((s) => s.capabilityContract === 'audio.synthesize');
   const speechSelectionKey = JSON.stringify([config?.revision, speechSelection?.state, speechSelection?.resource]);
-  const voiceAssetsKey = tasks.flatMap((t) => t.jobs.filter((j) => j.stage === 'voice-create' && j.state === 'consumed').map((j) => j.id)).join(',');
+  const voiceAssetsKey = voiceRevision;
   useEffect(() => {
     if (!config) return;
     let active = true;
     setVoices([]);
-    const client = getNimiLocalAppClient();
     void Promise.allSettled([
       client.aiConfig.listOptions({ kind: 'preset-voices' }),
       client.ai.voiceAssets.list({ pageSize: 100 }),
@@ -228,20 +277,17 @@ export function Studio() {
     return () => { active = false; };
   }, [speechSelectionKey, voiceAssetsKey]);
   useEffect(() => {
+    if (!platform.connected) return;
     let active = true;
-    void act(async () => {
-      const settings = await command<{ params: ProductionParams; business: BusinessSettings }>(
-        'settings',
-      );
-      if (!active) return;
-      setP(settings.params);
-      setBusiness(settings.business);
-      await refresh();
-      await refreshConfig();
-    });
+    let refreshing = false;
+    void refresh().catch(cause => { if (active) setReadError(String(cause)); });
+    void refreshConfig().catch(cause => { if (active) setReadError(String(cause)); });
     const timer = setInterval(() => {
-      if (active) void refresh().catch((e) => { setErrorScope(null); setError(String(e)); });
-    }, 1500);
+      if (active && !refreshing && document.visibilityState === 'visible') {
+        refreshing = true;
+        void refresh().catch((e) => { if (active) setReadError(String(e)); }).finally(() => { refreshing = false; });
+      }
+    }, platform.kind === 'desktop' ? 1500 : 5000);
     const focused = () => {
       void refreshConfig().catch((e) => { setErrorScope(null); setError(String(e)); });
     };
@@ -251,7 +297,7 @@ export function Studio() {
       clearInterval(timer);
       window.removeEventListener('focus', focused);
     };
-  }, [act, refresh, refreshConfig]);
+  }, [act, refresh, refreshConfig, platform.connected]);
   useEffect(() => {
     setCueDraft(current ? structuredClone(current.cues) : []);
     setPublishTitle(current?.params.topic || '');
@@ -279,13 +325,7 @@ export function Studio() {
             webp: 'image/webp',
           } as Record<string, string>
         )[ext || ''];
-      assets.push(
-        await command<MediaAsset>('import', {
-          name: file.name,
-          mediaType: type,
-          bytes: new Uint8Array(await file.arrayBuffer()),
-        }),
-      );
+      assets.push(await platform.importMedia(file, type));
     }
     return assets;
   };
@@ -299,7 +339,7 @@ export function Studio() {
       await command('settings.save', { scope: 'creation', value: p });
       const result = await command<{ taskIds: string[] }>('start', { params: p });
       await refresh();
-      setSelected(result.taskIds[0]);
+      selectTask(result.taskIds[0]);
       setNotice(`已提交 ${result.taskIds.length} 条制作任务。`);
     });
   const move = (index: number, delta: number) => {
@@ -340,7 +380,7 @@ export function Studio() {
   const final = current?.artifacts.find((a) => a.name === 'final.mp4');
   const audio = current?.audio || p.preview;
   const startLabel = pending ? '正在处理…' : p.stopAt === 'video' ? '制作视频' : `生成${stageLabels[p.stopAt]}阶段结果`;
-  const visibleError = error && (errorScope === null || errorScope === view) ? error : '';
+  const visibleError = (error && (errorScope === null || errorScope === view) ? error : '') || (platform.connected ? readError : '');
   const visibleNotice = notice?.scope === view ? notice.message : '';
   return (
     <div className="studio">
@@ -372,11 +412,11 @@ export function Studio() {
         </nav>
         <div className="rail-bottom">
           <span className="connection-dot" />
-          Nimi Host 已连接
+          {platform.connected ? platform.kind === 'desktop' ? 'Nimi Host 已连接' : 'Runtime 已连接' : '连接已断开'}
           <p>
-            项目与生成素材保存在
+            {platform.kind === 'desktop' ? '项目与生成素材保存在' : '制作在电脑上执行，素材保存在'}
             <br />
-            当前 App 的 Nimi 存储中。
+            {platform.kind === 'desktop' ? '当前 App 的 Nimi 存储中。' : '同一 PC 工作区。'}
           </p>
         </div>
       </aside>
@@ -394,11 +434,12 @@ export function Studio() {
           <div>
             <span className="queue-label">
               {view === 'create' && <>{`${p.aspect} · ${p.batch} 条 · 到${stageLabels[p.stopAt]}`}<br /></>}
-              {busyTasks.length ? `${busyTasks.length} 条任务进行中` : ''}
+              {activeCount ? `${activeCount} 条任务进行中` : ''}
             </span>
+            {['create','history'].includes(view) && <button className="mobile-results" onClick={showResults}>任务与结果</button>}
             {view === 'create' && <><button
               className="quiet"
-              disabled={pending}
+              disabled={!platform.connected || pending || !settingsLoaded.current}
               onClick={() =>
                 void act(async () => {
                   await command('settings.save', { scope: 'creation', value: p });
@@ -409,7 +450,7 @@ export function Studio() {
               <FolderOpen size={16} />
               保存创作参数
             </button>
-            <button className="primary" disabled={pending || !media?.available} onClick={start}>
+            <button className="primary" disabled={!platform.connected || pending || !settingsLoaded.current || !media?.available} onClick={start}>
               <Film size={18} />{startLabel}
             </button></>}
           </div>
@@ -421,6 +462,7 @@ export function Studio() {
               aria-label="关闭提示"
               onClick={() => {
                 setError('');
+                setReadError('');
                 updateNotice(null);
               }}
             >
@@ -446,9 +488,9 @@ export function Studio() {
               capabilities={config?.config?.capabilities ?? null}
               revision={config?.revision}
               effectiveSelections={config?.effectiveSelections}
-              listOptions={(query) => getNimiLocalAppClient().aiConfig.listOptions(query)}
+              listOptions={(query) => client.aiConfig.listOptions(query)}
               onOverwrite={async (input) => {
-                const result = await getNimiLocalAppClient().aiConfig.overwrite(input);
+                const result = await client.aiConfig.overwrite(input);
                 await refreshConfig();
                 return result;
               }}
@@ -460,6 +502,14 @@ export function Studio() {
           </section>
         ) : view === 'settings' ? (
           <section className="settings-page">
+            {platform.kind !== 'desktop' ? <>
+              <h2>PC 业务账户</h2>
+              <p className="intro">这些账户与密钥由电脑上的 MoneyPrinterTurbo 管理；此处只显示是否已配置。社交发布也请在 PC 完成。</p>
+              <dl className="business-grid">{(['pexels', 'pixabay', 'coverr', 'uploadPost'] as const).map(key => <div key={key}>
+                <dt>{({ pexels: 'Pexels', pixabay: 'Pixabay', coverr: 'Coverr', uploadPost: 'Upload-Post' })[key]}</dt>
+                <dd>{businessStatus === undefined ? '尚未读取' : businessStatus[key] ? '已配置' : '未配置'}</dd>
+              </div>)}</dl>
+            </> : <>
             <p className="intro">
               库存素材与 Upload-Post 的业务账号由本 App 管理。仅在使用对应服务时需要填写，AI
               凭据请在 Nimi 管理。
@@ -520,7 +570,7 @@ export function Studio() {
             </fieldset>
             <button
               className="primary"
-              disabled={pending}
+              disabled={!platform.connected || pending || !settingsLoaded.current}
               onClick={() =>
                 void act(async () => {
                   await command('settings.save', { scope: 'business', value: business });
@@ -530,6 +580,7 @@ export function Studio() {
             >
               保存业务设置
             </button>
+            </>}
             <section className="support-copy">
               <h2>支持与恢复</h2>
               <p>
@@ -567,12 +618,12 @@ export function Studio() {
                       <button
                         key={t.id}
                         className={`history-row ${selected === t.id ? 'selected' : ''}`}
-                        onClick={() => setSelected(t.id)}
+                        onClick={() => selectTask(t.id)}
                       >
                         <span>
-                          <strong>{t.params.topic || t.script.slice(0, 24)}</strong>
+                          <strong>{t.topic || '未命名任务'}</strong>
                           <small>
-                            {new Date(t.createdAt).toLocaleString('zh-CN')} · {t.params.aspect} ·
+                            {new Date(t.createdAt).toLocaleString('zh-CN')} · {t.aspect} ·
                             变体 {t.variant + 1}
                           </small>
                         </span>
@@ -582,6 +633,7 @@ export function Studio() {
                       </button>
                     ))
                   )}
+                  {nextCursor && <button disabled={!platform.connected || pending} onClick={() => void act(loadMore)}>读取更早的记录（已显示 {tasks.length} / {taskCount}）</button>}
                 </section>
               ) : (
                 <>
@@ -610,7 +662,7 @@ export function Studio() {
                     </Field>
                     <div className="inline-actions">
                       <button
-                        disabled={pending || !p.script}
+                        disabled={!platform.connected || pending || !p.script}
                         onClick={() =>
                           void act(async () => {
                             const result = await command<{ script: string }>('rewrite', {
@@ -856,7 +908,7 @@ export function Studio() {
                         </Field>
                         <div className="inline-actions">
                           <button
-                            disabled={pending || !p.script || !media?.available}
+                            disabled={!platform.connected || pending || !p.script || !media?.available}
                             onClick={() =>
                               void act(async () => {
                                 const result = await command<{ asset: MediaAsset }>('preview', {
@@ -873,7 +925,7 @@ export function Studio() {
                             试听
                           </button>
                           <button
-                            disabled={pending || !p.script || !media?.available}
+                            disabled={!platform.connected || pending || !p.script || !media?.available}
                             onClick={() =>
                               void act(async () => {
                                 const result = await command<{ asset: MediaAsset; key: string }>(
@@ -1103,7 +1155,7 @@ export function Studio() {
                     </p>
                     <button
                       className="primary start-button"
-                      disabled={pending || !media?.available}
+                      disabled={!platform.connected || pending || !settingsLoaded.current || !media?.available}
                       onClick={start}
                     >
                       <Film size={18} />
@@ -1113,7 +1165,7 @@ export function Studio() {
                 </>
               )}
             </main>
-            <aside className="result-panel">
+            <aside className="result-panel" ref={resultPanel}>
               <div className="result-heading">
                 <h2>制作与预览</h2>
                 <button
@@ -1129,7 +1181,7 @@ export function Studio() {
                   <option value="">选择制作记录</option>
                   {tasks.map((t) => (
                     <option key={t.id} value={t.id}>
-                      {t.params.topic || t.script.slice(0, 20)} · {stateLabels[t.state]} ·{' '}
+                      {t.topic || '未命名任务'} · {stateLabels[t.state]} ·{' '}
                       {t.id.slice(0, 6)}
                     </option>
                   ))}
@@ -1185,7 +1237,7 @@ export function Studio() {
                     ) : (
                       <>
                         <button
-                          disabled={pending}
+                          disabled={!platform.connected || pending || !settingsLoaded.current}
                           onClick={() =>
                             void act(async () => {
                               setP({
@@ -1202,7 +1254,7 @@ export function Studio() {
                         </button>
                         {['paused', 'failed', 'stopped'].includes(current.state) && (
                           <button
-                            disabled={pending}
+                            disabled={!platform.connected || pending || !settingsLoaded.current}
                             onClick={() =>
                               void act(async () => {
                                 await command('resume', { id: current.id });
@@ -1214,7 +1266,7 @@ export function Studio() {
                           </button>
                         )}
                         <button
-                          disabled={pending || !current.audio || !current.materials.length}
+                          disabled={!platform.connected || pending || !current.audio || !current.materials.length}
                           onClick={() =>
                             void act(async () => {
                               const result = await command<{ taskIds: string[] }>('regenerate', {
@@ -1238,14 +1290,12 @@ export function Studio() {
                         <button
                           onClick={() =>
                             void act(async () => {
-                              await getNimiLocalAppClient().storage.assets.reveal(
-                                final.relativePath,
-                              );
+                              await platform.deliverAsset(final);
                             })
                           }
                         >
                           <FolderOpen size={15} />
-                          打开文件
+                            {platform.kind === 'desktop' ? '打开文件' : '保存成片'}
                         </button>
                       </div>
                     </div>
@@ -1275,7 +1325,7 @@ export function Studio() {
                           key={a.relativePath}
                           onClick={() =>
                             void act(async () => {
-                              await getNimiLocalAppClient().storage.assets.reveal(a.relativePath);
+                              await platform.deliverAsset(a);
                             })
                           }
                         >
@@ -1356,7 +1406,7 @@ export function Studio() {
                       添加字幕
                     </button>
                     <button
-                      disabled={pending || ['running', 'queued'].includes(current.state)}
+                      disabled={!platform.connected || pending || ['running', 'queued'].includes(current.state)}
                       onClick={() =>
                         void act(async () => {
                           await command('cues.save', { id: current.id, cues: cueDraft });
@@ -1381,7 +1431,7 @@ export function Studio() {
                         </p>
                       ))}
                       <button
-                        disabled={pending}
+                        disabled={!platform.connected || pending || !settingsLoaded.current}
                         onClick={() =>
                           void act(async () => {
                             setJobDetails(
@@ -1395,12 +1445,12 @@ export function Studio() {
                       {jobDetails && <pre>{jobDetails}</pre>}
                     </details>
                   )}
-                  {final && (
+                  {final && platform.kind === 'desktop' && (
                     <details>
                       <summary>Upload-Post 发布</summary>
                       <p className="muted">发布与制作分开。先核对文案、平台和账户，再明确提交。</p>
                       <button
-                        disabled={pending}
+                        disabled={!platform.connected || pending || !settingsLoaded.current}
                         onClick={() =>
                           void act(async () => {
                             const result = await command<{ text: string }>('metadata', {
@@ -1448,7 +1498,7 @@ export function Studio() {
                       </label>
                       <button
                         className="primary"
-                        disabled={pending || !publishConfirm || !business.uploadPlatforms.length}
+                        disabled={!platform.connected || pending || !publishConfirm || !business.uploadPlatforms.length}
                         onClick={() =>
                           void act(async () => {
                             await command('publish', {
@@ -1468,7 +1518,7 @@ export function Studio() {
                         <>
                           <p>发布状态：{current.publish.state}</p>
                           <button
-                            disabled={pending}
+                            disabled={!platform.connected || pending || !settingsLoaded.current}
                             onClick={() =>
                               void act(async () => {
                                 await command('publish.status', { id: current.id });
@@ -1483,13 +1533,14 @@ export function Studio() {
                       )}
                     </details>
                   )}
+                  {final && platform.kind !== 'desktop' && <p className="muted">社交发布保留在 PC。请在电脑上核对业务账号、平台与文案后提交。</p>}
                 </>
               ) : (
                 <div className="empty result-empty">
                   <Film size={35} />
-                  <h3>从一个故事开始</h3>
+                  <h3>{selected ? '正在读取任务' : '从一个故事开始'}</h3>
                   <p>
-                    填写主题或脚本，选择画面与声音。完成后，可在这里预览成片和检查每个阶段的产物。
+                    {selected ? platform.connected ? '任务摘要与详细产物分开读取，请稍候。' : '重新连接后可继续读取此任务，原任务不会重交。' : '填写主题或脚本，选择画面与声音。完成后，可在这里预览成片和检查每个阶段的产物。'}
                   </p>
                 </div>
               )}
@@ -1497,7 +1548,7 @@ export function Studio() {
           </div>
         )}
         <footer className="studio-footer">
-          MoneyPrinterTurbo · AI 通过 Nimi 执行 · Windows x86_64
+          MoneyPrinterTurbo · AI 通过 Nimi 执行 · {platform.kind === 'desktop' ? 'Windows x86_64' : '制作由 PC 执行'}
         </footer>
       </div>
     </div>

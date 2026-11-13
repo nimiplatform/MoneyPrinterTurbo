@@ -1,6 +1,6 @@
 app_id: moneyprinterturbo.studio
 display_name: MoneyPrinterTurbo
-version: 0.1.0
+version: 0.1.1
 profile: standalone
 npm_package_name: moneyprinterturbo-nimi-app
 cargo_package_name: moneyprinterturbo-nimi-app-shell
