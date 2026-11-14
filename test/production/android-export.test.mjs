@@ -42,13 +42,14 @@ test('Save streams to bounded native writes with backpressure, original MIME/siz
       saveExport: async () => {
         saved++; await file.close(); assert.deepEqual(await readFile(path.join(directory, 'staged.bin')), bytes);
         controller.abort(); // The completed local Save is independent of Runtime scope end.
-        return { name: asset.name, bytesWritten: bytes.length };
+        return { name: '系统改名后的来源.txt', bytesWritten: bytes.length };
       },
       abortExport: async () => { aborted++; },
     }, value => reports.push(value));
     await entered.promise; assert.deepEqual(reads, [0]); assert.equal(saved, 0);
     release.resolve(); const result = await work;
     assert.equal(result.canceled, false); assert.equal(result.bytesWritten, bytes.length); assert.equal(saved, 1); assert.equal(aborted, 1);
+    assert.equal(result.name, '系统改名后的来源.txt');
     assert.equal(reports.at(-1).state, 'choosing'); assert.ok(reads.length > 1);
   } finally { await file.close().catch(() => {}); await rm(directory, { recursive: true, force: true }); }
 });
@@ -93,9 +94,33 @@ test('an empty text artifact has one terminal read and an exact zero-byte save',
   const result = await saveAndroidMedia(source, signal, {
     beginExport: async input => { assert.equal(input.size, 0); assert.equal(input.sha256, sha256); return { id: 'empty' }; },
     appendExport: async () => { writes++; throw new Error('No data chunk is expected'); },
-    saveExport: async () => ({ name: asset.name, bytesWritten: 0 }), abortExport: async () => {},
+    saveExport: async () => ({ bytesWritten: 0 }), abortExport: async () => {},
   }, () => {});
   assert.deepEqual(result, { canceled: false, bytesWritten: 0 }); assert.equal(reads, 1); assert.equal(writes, 0);
+});
+
+test('Android delivery reports only the returned system name and never substitutes the suggested name', async () => {
+  for (const actualName of ['系统选择的新名称.txt', undefined]) {
+    const saved = { canceled: false, ...(actualName ? { name: actualName } : {}), bytesWritten: bytes.length };
+    // Only the device adapter is replaced. The App-owned production delivery
+    // method and its reporting path run unchanged; this is not SAF UI proof.
+    const compiled = await build({ entryPoints: ['src/shell/remote-production.ts'], bundle: true, platform: 'node', format: 'esm', write: false,
+      plugins: [{ name: 'isolated-system-save', setup(builder) {
+        builder.onResolve({ filter: /^\.\/android-media\.js$/ }, () => ({ path: 'native-save', namespace: 'system-save-fixture' }));
+        builder.onLoad({ filter: /.*/, namespace: 'system-save-fixture' }, () => ({ contents:
+          `export async function deliverAndroidMedia(source) { for await (const part of source.chunks) {} return ${JSON.stringify(saved)}; } export async function shareAndroidMedia() { throw new Error('Unexpected share'); }`, loader: 'js' }));
+      } }],
+    });
+    const { remoteProductionPlatform: createPlatform } = await import(`data:text/javascript;base64,${Buffer.from(compiled.outputFiles[0].contents).toString('base64')}`);
+    const reports = [];
+    const platform = createPlatform({ signal: new AbortController().signal, client: { integration: {
+      listCatalog: async () => [{ targetRef: 'pc', integrationId: 'moneyprinterturbo.production.v1', available: true, permittedOperations: ['media.read'] }],
+      invoke: async input => ({ status: 'completed', resultJson: JSON.stringify(part(JSON.parse(input.inputJson).offset)) }),
+    } } }, 'android', value => reports.push(value));
+    await platform.deliverAsset(asset);
+    assert.deepEqual(reports.at(-1), { state: 'saved', ...(actualName ? { name: actualName } : {}), bytes: bytes.length });
+    assert.notEqual(reports.at(-1).name, asset.name);
+  }
 });
 
 test('a media gesture keeps its original permitted PC target even if the catalog selection changes later', async () => {

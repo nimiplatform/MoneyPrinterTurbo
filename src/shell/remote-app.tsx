@@ -24,7 +24,9 @@ function Workspace({ kind, identitySignal }: { kind: 'web' | 'android'; identity
     {delivery && <section className="mpt-delivery" role={delivery.state === 'failed' ? 'alert' : 'status'}>
       {delivery.state === 'reading' ? `正在接收 ${delivery.name}${delivery.total ? ` · ${Math.floor((delivery.bytes || 0) * 100 / delivery.total)}%` : ''}…`
         : delivery.state === 'choosing' ? `请选择 ${delivery.name} 的保存位置。`
-        : delivery.state === 'saved' ? `已保存 ${delivery.name}（${delivery.bytes?.toLocaleString()} 字节）到所选位置。`
+        : delivery.state === 'saved' ? delivery.name
+          ? `已保存 ${delivery.name}（${delivery.bytes.toLocaleString()} 字节）到所选位置。`
+          : `已保存到所选位置（${delivery.bytes.toLocaleString()} 字节）。`
         : delivery.state === 'canceled' ? `已取消 ${delivery.name} 的交付；PC 原件仍保留。`
         : delivery.state === 'shared' ? `分享面板已关闭：${delivery.name}。请在接收应用确认结果；这不代表已保存到本机。`
         : `${delivery.name} 未完成交付：${delivery.error}`}

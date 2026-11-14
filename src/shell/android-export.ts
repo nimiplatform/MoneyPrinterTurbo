@@ -3,13 +3,16 @@ import type { RemoteMedia } from './remote-media.js';
 export type ExportSink = {
   beginExport(input: { name: string; mimeType: string; size: number; sha256: string }): Promise<{ id: string }>;
   appendExport(input: { id: string; offset: number; data: string }): Promise<{ received: number }>;
-  saveExport(input: { id: string }): Promise<{ name: string; bytesWritten: number }>;
+  saveExport(input: { id: string }): Promise<{ name?: string; bytesWritten: number }>;
   abortExport(input: { id: string }): Promise<void>;
 };
-export type AndroidDeliveryState = { state: 'reading' | 'choosing' | 'saved' | 'canceled' | 'shared' | 'failed'; name: string; bytes?: number; total?: number; error?: string };
+export type AndroidDeliveryState =
+  | { state: 'saved'; name?: string; bytes: number }
+  | { state: 'reading' | 'choosing' | 'canceled' | 'shared' | 'failed'; name: string; bytes?: number; total?: number; error?: string };
 export type DeliveryObserver = (state: AndroidDeliveryState) => void;
+export type AndroidSaveResult = { canceled: true } | { canceled: false; name?: string; bytesWritten: number };
 
-export async function saveAndroidMedia(source: RemoteMedia, signal: AbortSignal, files: ExportSink, report: DeliveryObserver) {
+export async function saveAndroidMedia(source: RemoteMedia, signal: AbortSignal, files: ExportSink, report: DeliveryObserver): Promise<AndroidSaveResult> {
   signal.throwIfAborted();
   const { id } = await files.beginExport({ name: source.name, mimeType: source.mimeType, size: source.size, sha256: source.sha256 });
   let offset = 0;
@@ -32,7 +35,7 @@ export async function saveAndroidMedia(source: RemoteMedia, signal: AbortSignal,
     // after the picker ends the Runtime scope; no later RPC or client rebind occurs.
     const saved = await files.saveExport({ id });
     if (saved.bytesWritten !== source.size) throw new Error('所选位置未完整保存文件，请检查目标文件；PC 原件仍保留。');
-    return { canceled: false, bytesWritten: saved.bytesWritten };
+    return { canceled: false, ...(saved.name ? { name: saved.name } : {}), bytesWritten: saved.bytesWritten };
   } catch (error) {
     if ((error as { code?: string }).code === 'MPT_EXPORT_CANCELED') return { canceled: true };
     throw error;

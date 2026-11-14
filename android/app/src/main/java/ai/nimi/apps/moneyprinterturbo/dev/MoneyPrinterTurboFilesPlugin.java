@@ -2,8 +2,10 @@ package ai.nimi.apps.moneyprinterturbo.dev;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.StatFs;
+import android.provider.OpenableColumns;
 import android.util.Base64;
 import androidx.activity.result.ActivityResult;
 import com.getcapacitor.JSObject;
@@ -146,12 +148,27 @@ public class MoneyPrinterTurboFilesPlugin extends Plugin {
                 if (copied != transfer.expectedBytes) throw new IllegalStateException("文件复制未完整完成。");
                 verifyDigest(transfer.expectedHash, digest.digest());
                 synchronized (this) { discard(transfer); }
-                JSObject saved = new JSObject(); saved.put("name", transfer.name); saved.put("bytesWritten", copied); call.resolve(saved);
+                JSObject saved = new JSObject(); saved.put("bytesWritten", copied);
+                String displayName = savedDisplayName(destination);
+                if (displayName != null) saved.put("name", displayName);
+                call.resolve(saved);
             } catch (Exception error) {
                 synchronized (this) { discard(transfer); }
                 call.reject("文件未完整保存，请检查所选位置的文件；PC 原件仍保留。", "MPT_EXPORT_SAVE_FAILED");
             }
         });
+    }
+    private String savedDisplayName(Uri destination) {
+        try (Cursor cursor = getContext().getContentResolver().query(destination, new String[] { OpenableColumns.DISPLAY_NAME }, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                int column = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                String value = column < 0 ? null : cursor.getString(column);
+                if (value != null && !value.isBlank()) return value;
+            }
+        } catch (Exception ignored) { }
+        // Saving is complete even when the document provider withholds its
+        // display name. The suggested name is not the saved document's name.
+        return null;
     }
     @PluginMethod public synchronized void abortExport(PluginCall call) {
         if (active != null && active.id.equals(call.getString("id")) && !active.choosing) discard(active);

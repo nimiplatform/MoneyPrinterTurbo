@@ -117,7 +117,9 @@ export function remoteProductionPlatform(scope: NimiAppScope, kind: 'web' | 'and
         try {
           const { deliverAndroidMedia } = await import('./android-media.js');
           const result = await deliverAndroidMedia(await mediaSource(asset), scope.signal, report);
-          report({ state: result.canceled ? 'canceled' : 'saved', name: asset.name, bytes: result.bytesWritten });
+          report(result.canceled
+            ? { state: 'canceled', name: asset.name }
+            : { state: 'saved', ...(result.name ? { name: result.name } : {}), bytes: result.bytesWritten });
         } catch (error) { report({ state: 'failed', name: asset.name, error: String(error) }); throw error; }
       } else {
         const blob = await readMedia(asset);
