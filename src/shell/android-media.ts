@@ -1,7 +1,15 @@
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { registerPlugin } from '@capacitor/core';
+import { saveAndroidMedia, type ExportSink, type DeliveryObserver } from './android-export.js';
+import type { RemoteMedia } from './remote-media.js';
+const files = registerPlugin<ExportSink>('MoneyPrinterTurboFiles');
 
-export async function deliverAndroidMedia(blob: Blob, name: string, signal: AbortSignal) {
+export function deliverAndroidMedia(source: RemoteMedia, signal: AbortSignal, report: DeliveryObserver) {
+  return saveAndroidMedia(source, signal, files, report);
+}
+
+export async function shareAndroidMedia(blob: Blob, name: string, signal: AbortSignal) {
   if (!name || name === '.' || name === '..' || /[/\\\0]/u.test(name)) throw new Error('文件名无效。');
   const folder = `mpt-exports/${crypto.randomUUID()}`;
   const path = `${folder}/${name}`;
@@ -16,9 +24,10 @@ export async function deliverAndroidMedia(blob: Blob, name: string, signal: Abor
     }
     signal.throwIfAborted();
     await Share.share({ files: [file.uri], title: name });
+    return { canceled: false };
   } catch (cause) {
     await remove().catch(() => undefined);
-    if (cause instanceof Error && cause.message === 'Share canceled') return;
+    if (cause instanceof Error && cause.message === 'Share canceled') return { canceled: true };
     throw cause;
   }
 }

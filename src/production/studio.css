@@ -811,6 +811,11 @@
 .mpt-account-controls button { min-height: 44px; }
 .mpt-connect { flex-shrink: 0; padding: 12px 16px; background: #f5f7f3; border-bottom: 1px solid #d6dcd5; font-size: 14px; overflow-wrap: anywhere; }
 .mpt-connect button { min-height: 44px; text-decoration: underline; }
+.mpt-delivery { flex-shrink: 0; padding: 10px 16px; background: #f5f7f3; border-bottom: 1px solid #d6dcd5; font-size: 14px; overflow-wrap: anywhere; }
+.artifact-delivery { display: flex; gap: 8px; min-width: 0; }
+.artifact-delivery > button:first-child { flex: 1; min-width: 0; }
+.artifact-delivery > button + button { flex: 0 0 auto; width: auto; }
+.video-preview .file-note { flex-wrap: wrap; }
 .mpt-remote .studio { flex: 1; height: auto; min-height: 0; }
 .mpt-remote .studio .rail { height: 100%; }
 .mpt-remote .studio-body { min-width: 0; }

@@ -8,6 +8,7 @@ export type StudioPlatform = Readonly<{
   command<T>(name: StudioCommand, payload?: Record<string, unknown>): Promise<T>;
   openMedia(asset: MediaAsset): Promise<{ url: string; revoke(): void | Promise<void> }>;
   deliverAsset(asset: MediaAsset): Promise<void>;
+  shareAsset?(asset: MediaAsset): Promise<void>;
   importMedia(file: File, mediaType: string): Promise<MediaAsset>;
 }>;
 const Context = createContext<StudioPlatform | null>(null);

@@ -1288,6 +1288,8 @@ export function Studio() {
                       <div className="file-note">
                         成片 · {final.duration?.toFixed(2)} 秒
                         <button
+                          disabled={!platform.connected || pending}
+                          aria-label={`${platform.kind === 'desktop' ? '打开' : '保存'} ${final.name}`}
                           onClick={() =>
                             void act(async () => {
                               await platform.deliverAsset(final);
@@ -1297,6 +1299,8 @@ export function Studio() {
                           <FolderOpen size={15} />
                             {platform.kind === 'desktop' ? '打开文件' : '保存成片'}
                         </button>
+                        {platform.shareAsset && <button disabled={!platform.connected || pending}
+                          onClick={() => void act(() => platform.shareAsset!(final))}>分享</button>}
                       </div>
                     </div>
                   ) : (
@@ -1321,8 +1325,10 @@ export function Studio() {
                     <summary>阶段产物（{current.artifacts.length}）</summary>
                     <div className="artifact-list">
                       {current.artifacts.map((a) => (
+                        <div key={a.relativePath} className="artifact-delivery">
                         <button
-                          key={a.relativePath}
+                          disabled={!platform.connected || pending}
+                          aria-label={`${platform.kind === 'desktop' ? '打开' : '保存'} ${a.name}`}
                           onClick={() =>
                             void act(async () => {
                               await platform.deliverAsset(a);
@@ -1333,6 +1339,9 @@ export function Studio() {
                           <span>{a.name}</span>
                           <ArrowUpRight size={14} />
                         </button>
+                        {platform.shareAsset && <button disabled={!platform.connected || pending}
+                          aria-label={`分享 ${a.name}`} onClick={() => void act(() => platform.shareAsset!(a))}>分享</button>}
+                        </div>
                       ))}
                     </div>
                   </details>

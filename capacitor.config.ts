@@ -15,6 +15,7 @@ export const mobileAccess: Omit<NimiRemoteAppConfig, 'fetch'> = {
 const config: CapacitorConfig = {
   appId: 'ai.nimi.apps.moneyprinterturbo.dev', appName: 'MoneyPrinterTurbo（测试）', webDir: 'dist-mobile', loggingBehavior: 'none',
   server: { androidScheme: 'https' },
+  android: { useLegacyBridge: false, minWebViewVersion: 120 },
   plugins: { NimiAppAccess: { realmBaseUrl: mobileAccess.realmBaseUrl, clientId: mobileAccess.clientId, redirectUri: mobileAccess.redirectUri } },
 };
 export default config;

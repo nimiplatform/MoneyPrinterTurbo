@@ -1,6 +1,8 @@
 import type { NimiAppScope } from '@nimiplatform/kit/core/app-session';
 import type { StudioPlatform, StudioCommand } from '../production/platform.js';
 import type { Task, MediaAsset } from '../production/types.js';
+import { remoteMedia, remoteMediaBlob } from './remote-media.js';
+import type { DeliveryObserver } from './android-export.js';
 
 function within<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -18,18 +20,23 @@ function base64(bytes: Uint8Array) {
 }
 
 /** Each instance captures one real connected scope. Reconnect cannot retarget an outstanding gesture. */
-export function remoteProductionPlatform(scope: NimiAppScope, kind: 'web' | 'android'): StudioPlatform {
+export function remoteProductionPlatform(scope: NimiAppScope, kind: 'web' | 'android', report: DeliveryObserver = () => undefined): StudioPlatform {
   const api = scope.client.integration;
-  async function call<T>(operation: string, input: unknown): Promise<T> {
-    const signal = AbortSignal.any([scope.signal, AbortSignal.timeout(60_000)]);
+  async function selectTarget(operation: string, signal: AbortSignal) {
     signal.throwIfAborted();
     const candidates = (await within(api.listCatalog(), signal)).filter(row => row.integrationId === 'moneyprinterturbo.production.v1' && row.available);
     if (!candidates.length) throw new Error('请在 PC 打开 MoneyPrinterTurbo，并保持它运行。');
     const allowed = candidates.filter(row => row.permittedOperations.includes(operation));
     if (!allowed.length) throw new Error(`请在 Nimi Home → 集成中允许此客户端使用 ${operation}。`);
     if (allowed.length !== 1) throw new Error('有多个获准的 PC 工作区。请在 Nimi Home 中仅保留本次要使用的工作区权限。');
+    return allowed[0]!.targetRef;
+  }
+  async function call<T>(operation: string, input: unknown, capturedTarget?: string): Promise<T> {
+    const signal = AbortSignal.any([scope.signal, AbortSignal.timeout(60_000)]);
+    signal.throwIfAborted();
+    const targetRef = capturedTarget ?? await selectTarget(operation, signal);
     try {
-      let result = await within(api.invoke({ targetRef: allowed[0]!.targetRef, operation, inputJson: JSON.stringify(input) }), signal);
+      let result = await within(api.invoke({ targetRef, operation, inputJson: JSON.stringify(input) }), signal);
       while (result.status === 'accepted') {
         await pause(150, signal);
         result = await within(api.getCall({ callId: result.callId }), signal);
@@ -52,24 +59,12 @@ export function remoteProductionPlatform(scope: NimiAppScope, kind: 'web' | 'and
     if (!content) throw new Error('模型返回了空文字。');
     return content;
   }
+  async function mediaSource(asset: MediaAsset) {
+    const target = await selectTarget('media.read', AbortSignal.any([scope.signal, AbortSignal.timeout(60_000)]));
+    return remoteMedia(asset, offset => call('media.read', { relativePath: asset.relativePath, offset }, target), scope.signal);
+  }
   async function readMedia(asset: MediaAsset) {
-    const chunks: Uint8Array<ArrayBuffer>[] = [];
-    let offset = 0, digest = '', total = 0;
-    do {
-      const part = await call<{ dataBase64: string; offset: number; length: number; nextOffset: number; totalSize: number; sha256: string; eof: boolean; relativePath: string }>('media.read', { relativePath: asset.relativePath, offset });
-      if (offset === 0) { digest = part.sha256; total = part.totalSize; }
-      if (!Number.isSafeInteger(total) || total < 1 || total > 256 * 1024 * 1024 || part.offset !== offset || part.relativePath !== asset.relativePath || part.sha256 !== digest || part.totalSize !== total)
-        throw new Error('媒体信息发生变化或超过 256 MB，无法完整下载。请在 PC 打开原文件。');
-      const bytes = Uint8Array.from(atob(part.dataBase64), c => c.charCodeAt(0));
-      if (!bytes.length || bytes.length > 131072 || part.length !== bytes.length || part.nextOffset !== offset + bytes.length || part.nextOffset > total || part.eof !== (part.nextOffset === total))
-        throw new Error('媒体传输不完整，未提供部分文件。');
-      chunks.push(bytes); offset = part.nextOffset;
-    } while (offset < total);
-    const blob = new Blob(chunks, { type: asset.mediaType });
-    const actual = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', await blob.arrayBuffer())), value => value.toString(16).padStart(2, '0')).join('');
-    scope.signal.throwIfAborted();
-    if (`sha256:${actual}` !== digest) throw new Error('媒体完整性校验失败，未提供文件。');
-    return blob;
+    return remoteMediaBlob(await mediaSource(asset), scope.signal);
   }
   return {
     kind, connected: true, client: scope.client,
@@ -117,15 +112,28 @@ export function remoteProductionPlatform(scope: NimiAppScope, kind: 'web' | 'and
       return { url, revoke: () => URL.revokeObjectURL(url) };
     },
     async deliverAsset(asset) {
-      const blob = await readMedia(asset);
       if (kind === 'android') {
-        const { deliverAndroidMedia } = await import('./android-media.js');
-        await deliverAndroidMedia(blob, asset.name, scope.signal);
+        report({ state: 'reading', name: asset.name });
+        try {
+          const { deliverAndroidMedia } = await import('./android-media.js');
+          const result = await deliverAndroidMedia(await mediaSource(asset), scope.signal, report);
+          report({ state: result.canceled ? 'canceled' : 'saved', name: asset.name, bytes: result.bytesWritten });
+        } catch (error) { report({ state: 'failed', name: asset.name, error: String(error) }); throw error; }
       } else {
+        const blob = await readMedia(asset);
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a'); link.href = url; link.download = asset.name; link.click();
         setTimeout(() => URL.revokeObjectURL(url), 60_000);
       }
     },
+    ...(kind === 'android' ? { async shareAsset(asset: MediaAsset) {
+      report({ state: 'reading', name: asset.name });
+      try {
+        const blob = await readMedia(asset);
+        const { shareAndroidMedia } = await import('./android-media.js');
+        const result = await shareAndroidMedia(blob, asset.name, scope.signal);
+        report({ state: result.canceled ? 'canceled' : 'shared', name: asset.name });
+      } catch (error) { report({ state: 'failed', name: asset.name, error: String(error) }); throw error; }
+    } } : {}),
   };
 }
