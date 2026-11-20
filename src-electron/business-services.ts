@@ -4,27 +4,48 @@ const record = (v: unknown): Record<string, any> => {
   if (!v || typeof v !== 'object' || Array.isArray(v)) throw new Error('业务服务返回了无效响应。');
   return v as Record<string, any>;
 };
+export type StockSearchOptions = {
+  requiredDuration?: number;
+  clipDuration?: number;
+  clipSpeed?: number;
+};
+const targetCanvas = (aspect: string): [number, number] =>
+  aspect === '16:9' ? [1920, 1080] : aspect === '1:1' ? [1080, 1080] : [1080, 1920];
 export async function searchStock(
   provider: 'pexels' | 'pixabay' | 'coverr',
   terms: string[],
   settings: BusinessSettings,
   aspect: string,
   signal: AbortSignal,
+  options: StockSearchOptions = {},
 ): Promise<Stock[]> {
   const key = settings[`${provider}Key`];
   if (!key) throw new Error(`请在业务设置中填写 ${provider} API key。`);
   const results: Stock[] = [];
+  const seenUrls = new Set<string>();
+  const [targetW, targetH] = targetCanvas(aspect);
+  const clipDuration = Math.max(1, Number(options.clipDuration) || 5);
+  const rawSpeed = Number(options.clipSpeed);
+  const clipSpeed = Number.isFinite(rawSpeed) && rawSpeed > 0 ? Math.min(2, Math.max(0.5, rawSpeed)) : 1;
+  const requiredDuration = Math.max(0, Number(options.requiredDuration) || 0);
+  let coveredDuration = 0;
   const orientation = aspect === '9:16' ? 'portrait' : aspect === '16:9' ? 'landscape' : 'square';
   const matches = (w: number, h: number) =>
     w >= 470 &&
     h >= 470 &&
     (aspect === '9:16' ? h > w : aspect === '16:9' ? w > h : Math.abs(w / h - 1) < 0.12);
+  const fillsCanvas = (w: number, h: number) =>
+    w >= targetW &&
+    h >= targetH &&
+    (aspect === '1:1' ? true : aspect === '9:16' ? h > w : w > h);
   for (const term of terms.slice(0, 20)) {
     let url: URL;
     const headers: Record<string, string> = {};
     if (provider === 'pexels') {
       url = new URL('https://api.pexels.com/v1/videos/search');
-      url.search = new URLSearchParams({ query: term, per_page: '20', orientation }).toString();
+      const query: Record<string, string> = { query: term, per_page: '20' };
+      if (aspect !== '1:1') query.orientation = orientation;
+      url.search = new URLSearchParams(query).toString();
       headers.Authorization = key;
     } else if (provider === 'pixabay') {
       url = new URL('https://pixabay.com/api/videos/');
@@ -52,10 +73,15 @@ export async function searchStock(
       signal.throwIfAborted();
       throw new Error(`${provider} 网络请求失败，请检查账户与网络。`);
     }
-    if (!response.ok) throw new Error(`${provider} 搜索失败 (${response.status})。`);
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403)
+        throw new Error(`${provider} API key 无效或未获授权 (${response.status})，请检查业务设置。`);
+      throw new Error(`${provider} 搜索失败 (${response.status})。`);
+    }
     const body = record(await response.json());
     const list = provider === 'pexels' ? body.videos : body.hits;
     if (!Array.isArray(list)) throw new Error(`${provider} 搜索响应缺少素材列表。`);
+    let termCount = 0;
     for (const value of list) {
       const v = record(value);
       let link = '',
@@ -63,25 +89,35 @@ export async function searchStock(
         h = 0;
       if (provider === 'pexels') {
         const files = Array.isArray(v.video_files) ? v.video_files : [];
-        const file = files
-          .filter(
-            (x: any) => x.file_type === 'video/mp4' && matches(Number(x.width), Number(x.height)),
-          )
-          .sort((a: any, b: any) => a.width * a.height - b.width * b.height)[0];
+        const mp4s = files.filter((x: any) => x && x.file_type === 'video/mp4');
+        const full = mp4s
+          .filter((x: any) => fillsCanvas(Number(x.width), Number(x.height)))
+          .sort((a: any, b: any) => Number(a.width) * Number(a.height) - Number(b.width) * Number(b.height))[0];
+        const fallback = mp4s
+          .filter((x: any) => matches(Number(x.width), Number(x.height)))
+          .sort((a: any, b: any) => Number(a.width) * Number(a.height) - Number(b.width) * Number(b.height))[0];
+        const file = full ?? fallback;
         if (file) {
           link = file.link;
-          w = file.width;
-          h = file.height;
+          w = Number(file.width);
+          h = Number(file.height);
         }
       } else if (provider === 'pixabay') {
-        const files = Object.values(v.videos || {}) as any[];
-        const file = files
+        const files = Object.values(v.videos || {}).filter(
+          (x: any) => x && typeof x === 'object' && Number.isFinite(Number(x.width)) && Number.isFinite(Number(x.height)),
+        ) as any[];
+        // Prefer the smallest rendition that fills the output canvas (e.g. 1080p over 4K).
+        const full = files
+          .filter((x) => fillsCanvas(Number(x.width), Number(x.height)))
+          .sort((a, b) => Number(a.width) * Number(a.height) - Number(b.width) * Number(b.height))[0];
+        const fallback = files
           .filter((x) => matches(Number(x.width), Number(x.height)))
-          .sort((a, b) => b.width * b.height - a.width * a.height)[0];
+          .sort((a, b) => Number(b.width) * Number(b.height) - Number(a.width) * Number(a.height))[0];
+        const file = full ?? fallback;
         if (file) {
           link = file.url;
-          w = file.width;
-          h = file.height;
+          w = Number(file.width);
+          h = Number(file.height);
         }
       } else {
         link = v.urls?.mp4_download;
@@ -89,7 +125,14 @@ export async function searchStock(
         h = Number(v.max_height);
       }
       const duration = Number(v.duration);
-      if (typeof link !== 'string' || !Number.isFinite(duration) || duration <= 0 || !matches(w, h))
+      if (
+        typeof link !== 'string' ||
+        !link ||
+        seenUrls.has(link) ||
+        !Number.isFinite(duration) ||
+        duration <= 0 ||
+        !(fillsCanvas(w, h) || matches(w, h))
+      )
         continue;
       const parsed = new URL(link);
       if (parsed.protocol !== 'https:') continue;
@@ -103,6 +146,7 @@ export async function searchStock(
             credit = ` · ${publicPage.origin}${publicPage.pathname}`;
         } catch { /* A download is usable without a public credit URL. */ }
       }
+      seenUrls.add(link);
       // Signed download URLs remain transient; project metadata retains public credit only.
       results.push({
         url: link,
@@ -110,8 +154,11 @@ export async function searchStock(
         source: `${provider} · ${term}${credit}`,
         duration,
       });
-      if (results.filter((x) => x.name.startsWith(term + '-')).length >= 2) break;
+      termCount++;
+      coveredDuration += Math.min(clipDuration, duration / clipSpeed);
+      if (requiredDuration > 0 ? coveredDuration >= requiredDuration && termCount >= 1 : termCount >= 2) break;
     }
+    if (requiredDuration > 0 && coveredDuration >= requiredDuration && results.length >= terms.length) break;
   }
   if (!results.length)
     throw new Error(`${provider} 没有返回匹配画幅的可用素材，请调整关键词或选择本地素材。`);

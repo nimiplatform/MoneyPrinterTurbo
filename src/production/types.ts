@@ -24,6 +24,7 @@ export type ProductionParams = {
   clipDuration: number;
   clipSpeed: number;
   fit: 'cover' | 'contain';
+  imageMotion: 'zoom' | 'static';
   transition: string;
   videoMode: 't2v' | 'i2v-first-frame' | 'i2v-first-last' | 'i2v-reference';
   videoResolution: string;
@@ -75,6 +76,7 @@ export const defaultParams: ProductionParams = {
   clipDuration: 5,
   clipSpeed: 1,
   fit: 'cover',
+  imageMotion: 'zoom',
   transition: '',
   videoMode: 't2v',
   videoResolution: '720p',
@@ -181,12 +183,14 @@ export function validateParams(input: unknown): ProductionParams {
   if (Object.keys(input).some((key) => !Object.hasOwn(defaultParams, key)))
     throw new Error('创作参数包含未支持的字段。');
   const p = structuredClone(input) as ProductionParams;
+  p.imageMotion ??= 'zoom';
   for (const [key, choices] of Object.entries({
     aspect: ['9:16', '16:9', '1:1'],
     narration: ['auto', 'upload', 'none'],
     materialSource: ['local', 'pexels', 'pixabay', 'coverr', 'ai-image', 'ai-video'],
     order: ['sequential', 'random'],
     fit: ['cover', 'contain'],
+    imageMotion: ['zoom', 'static'],
     subtitleMode: ['sentence', 'word_by_word'],
     animation: ['none', 'pop_spring'],
     subtitlePosition: ['top', 'center', 'bottom', 'custom'],

@@ -1,6 +1,7 @@
 import type { NimiAppScope } from '@nimiplatform/kit/core/app-session';
 import type { StudioPlatform, StudioCommand } from '../production/platform.js';
 import type { Task, MediaAsset } from '../production/types.js';
+import { cleanGeneratedScript } from '../production/script.js';
 import { remoteMedia, remoteMediaBlob } from './remote-media.js';
 import type { DeliveryObserver } from './android-export.js';
 
@@ -76,7 +77,7 @@ export function remoteProductionPlatform(scope: NimiAppScope, kind: 'web' | 'and
       }
       if (name === 'rewrite') {
         const p = payload.params as Task['params'];
-        return { script: await text(`Rewrite this short video script in ${p.language}. Instruction: ${payload.instruction}\nScript: ${p.script}`) } as T;
+        return { script: cleanGeneratedScript(await text(`Rewrite this short video script in ${p.language}. Instruction: ${payload.instruction}\nScript: ${p.script}`)) } as T;
       }
       if (name === 'metadata') {
         const task = await call<Task>('task', payload);

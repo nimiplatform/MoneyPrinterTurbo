@@ -214,7 +214,7 @@ export function Studio() {
   const refresh = useCallback(async () => {
     if (!settingsLoaded.current) {
       const settings = await command<{ params: ProductionParams; business?: BusinessSettings; businessStatus?: BusinessReadiness }>('settings');
-      setP(settings.params);
+      setP({ ...structuredClone(defaultParams), ...settings.params });
       if (settings.business) setBusiness(settings.business);
       setBusinessStatus(settings.businessStatus);
       settingsLoaded.current = true;
@@ -824,6 +824,10 @@ export function Studio() {
                         {choose('fit', '画面适配', [
                           ['cover', '裁剪填满'],
                           ['contain', '完整保留 / 黑边'],
+                        ])}
+                        {choose('imageMotion', '图片动效', [
+                          ['zoom', '缓慢放大'],
+                          ['static', '静止画面'],
                         ])}
                         {number('clipDuration', '每个片段最长（秒）', 1, 30)}
                         {number('clipSpeed', '画面速度', 0.25, 4, 0.25)}

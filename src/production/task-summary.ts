@@ -2,7 +2,7 @@ import { defaultParams, type Task, type ProductionParams, type MediaAsset } from
 
 /** Project only creation fields, never adjacent/unknown settings or credentials. */
 export function publicCreationParams(value: ProductionParams): ProductionParams {
-  const params = Object.fromEntries(Object.keys(defaultParams).map(key => [key, value[key as keyof ProductionParams]])) as ProductionParams;
+  const params = Object.fromEntries(Object.keys(defaultParams).map(key => [key, value[key as keyof ProductionParams] ?? defaultParams[key as keyof ProductionParams]])) as ProductionParams;
   const asset = (a: MediaAsset): MediaAsset => ({ relativePath: a.relativePath, name: a.name, mediaType: a.mediaType, sizeBytes: a.sizeBytes,
     ...(a.duration === undefined ? {} : { duration: a.duration }), ...(a.source === undefined ? {} : { source: a.source }) });
   params.materials = params.materials.map(asset);

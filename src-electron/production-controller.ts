@@ -19,7 +19,7 @@ import {
   type Stage,
 } from '../src/production/types.js';
 import { assembleCues, toSrt, validateCues } from '../src/production/transcription.js';
-import { parseVisualTerms } from '../src/production/script.js';
+import { cleanGeneratedScript, parseVisualTerms, prepareNarrationText } from '../src/production/script.js';
 import { taskPage } from './task-list.js';
 import type { StudioSnapshot, BusinessReadiness } from '../src/production/task-summary.js';
 import { publicCreationParams } from '../src/production/task-summary.js';
@@ -558,9 +558,11 @@ export class ProductionController {
     const p = validateParams(input);
     const signal = new AbortController().signal;
     return {
-      script: await this.text(
-        `Rewrite this short video script in ${p.language}. Instruction: ${instruction}\nScript: ${p.script}`,
-        signal,
+      script: cleanGeneratedScript(
+        await this.text(
+          `Rewrite this short video script in ${p.language}. Instruction: ${instruction}\nScript: ${p.script}`,
+          signal,
+        ),
       ),
     };
   }
@@ -759,6 +761,7 @@ export class ProductionController {
     await this.config(t, signal);
   }
   private async synthesize(t: Task, script: string, signal: AbortSignal) {
+    const narrationText = prepareNarrationText(script);
     const p = t.params;
     let voice = p.voice;
     const config = await this.config(t, signal);
@@ -870,7 +873,7 @@ export class ProductionController {
       'narration',
       {
         type: 'speech-synthesize',
-        text: script,
+        text: narrationText,
         language: '',
         audioFormat: 'wav',
         emotion: p.emotion,
@@ -894,11 +897,13 @@ export class ProductionController {
     const business = structuredClone((await this.settings()).business);
     await this.stage(t, 'script', signal);
     if (!t.script)
-      t.script = await this.text(
-        `Write ${p.paragraphs} paragraph(s) of concise spoken narration in ${p.language} for a short video about: ${p.topic}. ${p.scriptPrompt}`,
-        signal,
-        t,
-        'text-script',
+      t.script = cleanGeneratedScript(
+        await this.text(
+          `Write ${p.paragraphs} paragraph(s) of concise spoken narration in ${p.language} for a short video about: ${p.topic}. ${p.scriptPrompt}`,
+          signal,
+          t,
+          'text-script',
+        ),
       );
     await this.document(t, 'script.txt', t.script, signal);
     await this.save(t);
@@ -1104,6 +1109,11 @@ export class ProductionController {
           business,
           p.aspect,
           signal,
+          {
+            requiredDuration: t.audio?.duration || p.silentDuration,
+            clipDuration: p.clipDuration,
+            clipSpeed: p.clipSpeed,
+          },
         );
         for (const [i, source] of results.entries()) {
           const response = await fetch(source.url, { signal, redirect: 'error' });

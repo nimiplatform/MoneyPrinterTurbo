@@ -14,9 +14,14 @@ description: Operate the running MoneyPrinterTurbo Host through Nimi Integration
 ## 操作
 
 - `list {"limit": 20}`：查询本 Host 的任务摘要，每页最多50条。返回`nextCursor`时，传入`{"cursor":"...","limit":20}`读取下一页；新任务通过重新读取第一页发现。完整时间轴不放在列表中。
-- `create {"params": ...}`：提交完整业务参数快照，返回 `taskIds`。参数结构使用本 App 的 `src/production/types.ts`，可从已有任务的 `params` 取回并编辑。保持主题、脚本、素材、配音、字幕、音乐、画幅、批量与 `stopAt` 的真实选择。
-- `task {"id": "..."}`：查询原任务，检查状态、错误、已知 Job ID 与资产的返回 `relativePath`。完成后通过`asset`取回实际产物，或在MPT中预览、导出。
-- `asset {"id": "...", "name": "final.mp4", "offset": 0, "length": 32768}`：按任务产物白名单读取实际数据，返回base64、现有资产SHA、nextOffset和eof；读取到eof后核对完整字节。调用者不能把MPT的relativePath当作自己App存储中的路径。
+- `studio.snapshot {"limit": 50}`：读取任务摘要分页、总记录数、活动任务数、声音修订摘要和本机媒体工具就绪状态（Web/Android 工作区入口使用）。
+- `studio.settings {}` / `studio.settings.save {"params": ...}`：读取或保存本工作区创作参数及业务账号已配置布尔状态；不返回或修改已存储的外部服务密钥。
+- `create {"params": ...}`：提交完整业务参数快照，返回 `taskIds`。参数结构使用本 App 的 `src/production/types.ts`（含 `imageMotion: "zoom" | "static"`），可从已有任务的 `params` 取回并编辑。保持主题、脚本、素材、配音、字幕、音乐、画幅、批量与 `stopAt` 的真实选择。
+- `preview.start {"params": ..., "text": "..."}`：创建一条持久化的配音试听/完整预览任务并返回 `taskId`，调用者通过 `task` 读取完成状态与预览产物，断线不会重复提交合成。
+- `task {"id": "..."}` / `jobs {"id": "..."}`：查询原任务状态、错误、资产返回 `relativePath` 及原始 AI Job 引用。完成后通过 `asset` 或 `media.read` 取回实际产物，或在 MPT 中预览、导出。
+- `asset {"id": "...", "name": "final.mp4", "offset": 0, "length": 32768}`：按任务产物白名单读取实际数据（单次最多 32 KiB），返回 base64、现有资产 SHA、nextOffset 和 eof；读取到 eof 后核对完整字节。
+- `media.read {"relativePath": "...", "offset": 0, "length": 131072}` / `media.upload {"action": "begin|append|finish|abort", ...}`：获准远程客户端按 128 KiB 块读取工作区媒体资产，或按当前连接 `consumerRef` 有序分块导入 256 MiB 以内媒体文件。
+- `cues.save {"id": "...", "cues": [...]}` / `regenerate {"id": "..."}` / `resume {"id": "..."}`：保存已停止任务的字幕时间轴校对、复用已有音频与素材重新成片，或显式继续无不确定提交的可恢复任务。
 - `cancel {"id": "..."}`：停止该任务的 App 调度，终止其媒体工作并请求取消已知 Runtime Job。分别查看停止调度与实际取消结果。
 
 单条详细任务若超过Integration的1 MiB返回上限，调用走正式失败通道（Runtime归一为`PROVIDER_FAILED`），不会记为成功。通过`list`查看摘要，使用`asset`分块读取`script.txt`、`subtitle.srt`、`final.mp4`等已保存产物，或在MPT查看完整任务。回调传递失败不意味着业务未执行，不能据此重新`create`。

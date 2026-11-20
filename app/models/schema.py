@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class VideoConcatMode(str, Enum):
     random = "random"
@@ -27,6 +27,10 @@ class VideoFitMode(str, Enum):
     cover = "cover"
     contain = "contain"
 
+class ImageMotion(str, Enum):
+    static = "static"
+    zoom = "zoom"
+
 @dataclass
 class MaterialInfo:
     provider: str = "local"
@@ -37,21 +41,22 @@ class MaterialInfo:
 class VideoParams(BaseModel):
     video_subject: str = ""
     video_aspect: str = "9:16"
+    image_motion: ImageMotion = ImageMotion.zoom
     video_clip_speed: float = 1
-    voice_volume: float = 1
+    voice_volume: float | None = Field(default=1.0, allow_inf_nan=False)
     bgm_type: str = ""
     bgm_file: str = ""
-    bgm_volume: float = 0.2
+    bgm_volume: float = Field(default=0.2, allow_inf_nan=False)
     subtitle_enabled: bool = True
     subtitle_position: str = "bottom"
     subtitle_display_mode: str = "sentence"
     subtitle_animation: str = "none"
-    custom_position: float = 75
+    custom_position: float = Field(default=75, ge=0, le=100, allow_inf_nan=False)
     font_name: str = "NotoSansCJKsc-Regular.otf"
     text_fore_color: str = "#FFFFFF"
     text_background_color: bool | str = False
     rounded_subtitle_background: bool = False
-    font_size: int = 60
+    font_size: int = Field(default=60, ge=1)
     stroke_color: str = "#000000"
-    stroke_width: float = 2
+    stroke_width: float = Field(default=2, ge=0, allow_inf_nan=False)
     n_threads: int = 2

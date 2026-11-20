@@ -67,12 +67,12 @@ def handle(operation, data):
             offset += 45
         return {"chunks": chunks}
     if operation == "render":
-        from app.models.schema import VideoAspect, VideoConcatMode, VideoFitMode, VideoParams, VideoTransitionMode
-        from app.services.video import combine_videos, generate_video, preprocess_video
-        from app.models.schema import MaterialInfo
+        from app.models.schema import ImageMotion, MaterialInfo, VideoAspect, VideoConcatMode, VideoFitMode, VideoParams, VideoTransitionMode
+        from app.services.video import combine_videos, generate_video, preprocess_video, validate_subtitle_colors
         p = data["params"]
         materials = [MaterialInfo(url=location(name)) for name in data["materials"]]
-        processed = preprocess_video(materials, clip_duration=p["clipDuration"])
+        processed = preprocess_video(materials, clip_duration=p["clipDuration"],
+                                     image_motion=ImageMotion(p.get("imageMotion") or "zoom"))
         combined, output = data["combined"], data["output"]
         if not processed:
             raise ValueError("No decodable material passed the size checks")
@@ -82,7 +82,9 @@ def handle(operation, data):
                        max_clip_duration=p["clipDuration"], clip_speed=p["clipSpeed"],
                        video_fit_mode=VideoFitMode(p["fit"]), threads=2)
         subtitle_file = data["subtitle"]
-        params = VideoParams(video_subject=p["topic"], video_aspect=p["aspect"], voice_volume=p["voiceVolume"],
+        params = VideoParams(video_subject=p["topic"], video_aspect=p["aspect"],
+                             image_motion=ImageMotion(p.get("imageMotion") or "zoom"),
+                             voice_volume=p["voiceVolume"],
                              bgm_type="custom" if data.get("music") and p["musicVolume"] > 0 else "",
                              bgm_volume=p["musicVolume"], subtitle_enabled=bool(subtitle_file),
                              subtitle_position=p["subtitlePosition"], custom_position=p["subtitleY"],
@@ -90,6 +92,7 @@ def handle(operation, data):
                              font_name="NotoSansCJKsc-Regular.otf", font_size=p["fontSize"], text_fore_color=p["textColor"],
                              text_background_color=p["background"] or False, rounded_subtitle_background=p["roundedBackground"],
                              stroke_color=p["strokeColor"], stroke_width=p["strokeWidth"], n_threads=2)
+        validate_subtitle_colors(params)
         # The final SRT already contains real typed word intervals; never divide a sentence here.
         mixed = generate_video(location(combined), location(data["audio"]), location(subtitle_file) if subtitle_file else "",
                                location(output), params, bgm_file_override=location(data["music"]) if data.get("music") else "",
