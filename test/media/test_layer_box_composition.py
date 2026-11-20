@@ -36,3 +36,4 @@ def test_image_motion_static_vs_smooth_zoom_produces_distinct_valid_outputs(tmp_
     assert static_mp4 != zoom_mp4
     assert ".static-" in static_mp4
     assert ".zoom-smooth-" in zoom_mp4
+    assert len(__import__("os").path.basename(zoom_mp4)) <= 60

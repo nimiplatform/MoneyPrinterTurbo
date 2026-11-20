@@ -111,11 +111,8 @@ export async function prepareMedia() {
     path.join(cache, 'downloads/pip-26.2.1.zip'),
     '71138adf1f4ca900cdb7d289c21b7494329f2332b6d85f0e1c42108c0384ed3e',
   );
-  try {
-    await access(path.join(site, 'pip/__main__.py'));
-  } catch {
-    await extract(pip, site);
-  }
+  await rm(site, { recursive: true, force: true });
+  await extract(pip, site);
   await writeFile(
     path.join(pythonRoot, 'python314._pth'),
     'python314.zip\n.\nLib/site-packages\n..\nimport site\n',
@@ -131,6 +128,7 @@ export async function prepareMedia() {
       '--no-warn-script-location',
       '--only-binary=:all:',
       '--require-hashes',
+      '--no-deps',
       '--upgrade',
       '--target',
       site,
@@ -181,7 +179,7 @@ export async function prepareMedia() {
       '-X',
       'utf8',
       '-c',
-      'from app.services import video; import PIL; print("Packaged Python media imports ready")',
+      'from app.services import video; from app.services.utils import subtitle_shaping; import PIL, khatt; print("Packaged Python media imports ready", PIL.__version__)',
     ],
     bundle,
     {

@@ -744,7 +744,7 @@ def _sanitize_image_file(image_path: str) -> str:
                 source_digest.update(cleaned_image.tobytes())
                 sanitized_path = os.path.join(
                     os.path.dirname(image_path),
-                    f"{source_digest.hexdigest()}.sanitized.png",
+                    f"{source_digest.hexdigest()[:24]}.sanitized.png",
                 )
                 descriptor, temp_path = tempfile.mkstemp(
                     prefix=".image-sanitize-", suffix=".png",
@@ -2095,8 +2095,10 @@ def render_image_zoom_video(
             source_digest.update(source_frame.tobytes())
             if clip.mask is not None:
                 source_digest.update(clip.mask.get_frame(0).tobytes())
-            source_identity = source_digest.hexdigest()
-            duration_identity = hashlib.sha256(str(clip_duration).encode()).hexdigest()[:16]
+            # Keep intermediate basenames compact so deep Host scratch roots
+            # (e.g. ~170 chars on Windows) stay well below Win32 MAX_PATH (260).
+            source_identity = source_digest.hexdigest()[:24]
+            duration_identity = hashlib.sha256(str(clip_duration).encode()).hexdigest()[:12]
             motion_tag = _ZOOM_CACHE_TAG if motion == ImageMotion.zoom else ""
             video_file = os.path.join(
                 os.path.dirname(image_path),

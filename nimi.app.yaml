@@ -1,4 +1,5 @@
 app_id: moneyprinterturbo.studio
+public_slug: moneyprinterturbo
 display_name: MoneyPrinterTurbo
 version: 0.1.1
 profile: standalone
