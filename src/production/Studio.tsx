@@ -31,6 +31,7 @@ import {
 import { ModelConfigAIConfigSurface } from '@nimiplatform/kit/features/model-config';
 import type { NimiAIConfigSnapshot } from '@nimiplatform/sdk/ai';
 import { useStudioPlatform } from './platform.js';
+import { saveCreationDefaults, submitProductionBatch } from './actions.js';
 import type { StudioSnapshot, TaskSummary, BusinessReadiness } from './task-summary.js';
 import {
   defaultParams,
@@ -336,8 +337,7 @@ export function Studio() {
     });
   const start = () =>
     act(async () => {
-      await command('settings.save', { scope: 'creation', value: p });
-      const result = await command<{ taskIds: string[] }>('start', { params: p });
+      const result = await submitProductionBatch(command, p);
       await refresh();
       selectTask(result.taskIds[0]);
       setNotice(`已提交 ${result.taskIds.length} 条制作任务。`);
@@ -442,7 +442,7 @@ export function Studio() {
               disabled={!platform.connected || pending || !settingsLoaded.current}
               onClick={() =>
                 void act(async () => {
-                  await command('settings.save', { scope: 'creation', value: p });
+                  await saveCreationDefaults(command, p);
                   setNotice('创作参数已保存。');
                 })
               }

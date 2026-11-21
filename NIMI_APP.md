@@ -13,9 +13,15 @@
 
 ## 从 Web 或 Android 使用
 
-从 Web 或 Android 远程连接电脑上的工作区，需要电脑端安装并运行 **MoneyPrinterTurbo 0.1.1 或更高版本** 及配套的新版 Nimi Home；早期 0.1.0 版本仅包含基础自动化接口，不支持 Web 与 Android 所需的工作区读取、素材导入和成片传输。当前公开应用目录尚未上架 0.1.1 及正式 Web 入口，远程功能需待新版上架后对普通用户开放。
+从 Web 或 Android 远程连接电脑上的工作区，需要电脑端安装并运行 **MoneyPrinterTurbo 0.1.1 或更高版本** 及支持当前远程直连的新版 Nimi Home（早期 0.1.0 仅包含基础自动化接口，不支持远程工作区）。
 
-电脑上的 Nimi Home 和配套版本的 MoneyPrinterTurbo 需要保持运行。使用同一 Nimi 账号登录，首次连接在 Home 确认来源，再在「集成」中允许该客户端使用 MoneyPrinterTurbo 的制作与媒体操作。
+首次从浏览器连接时：
+
+1. 在电脑上保持 Nimi Home 和 MoneyPrinterTurbo 运行，在 Home「连接与接入」中确认本机已设为账号的「此电脑 · 主 Runtime」并开启远程接入。
+2. 打开 https://nimi.ai/apps/moneyprinterturbo 点击「在浏览器打开」（直达 https://moneyprinterturbo.nimi.xyz），使用同一 Nimi 账号登录，首次连接时在电脑端 Home 确认允许该来源。
+3. 在电脑端 Nimi Home →「集成」中，为 `MoneyPrinterTurbo video production` 勾选允许此客户端使用的操作：
+   - **首用制作与读回核心权限**：`studio.settings`（读取创作参数）、`studio.snapshot`（读取任务列表）、`media.upload`（导入本地图片/音视频素材）、`media.read`（预览与下载成片及阶段文件）、`create`（提交制作任务）、`task`（查看任务进度与结果），以及 `studio.settings.save`（保存默认创作参数；0.1.1 网页版点击「制作视频」时也会先调用该权限，0.1.2 起仅在点击「保存创作参数」时需要）。
+   - **试听、任务控制与校对重制权限（按需开启）**：`preview.start`（配音试听）、`cancel`（停止任务）、`resume`（继续暂停任务）、`cues.save`（保存字幕校对）、`regenerate`（按校对字幕重新成片）、`jobs`（查看底层任务记录）。
 
 Web 和 Android 通过已获准的集成操作读取同一 PC 工作区的任务，不会因相同应用标识直接共享不同注册主体的私有存储。连接后可以导入素材、改写脚本、发起制作、停止任务、校对字幕、查看阶段结果和下载保存成片；窄屏可用「任务与结果」直接查看进度。Android 的「保存成片」和阶段产物按钮使用系统保存位置选择器，「分享」另行交给你选择的应用；取消不会删除 PC 原件，只有完整保存到所选位置后才显示已保存。单个远端媒体文件上限为 256 MB，更大的成片请在 PC 打开。
 
