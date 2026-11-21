@@ -21,9 +21,91 @@ required_standardized_feature_refs: []
 storage_policy:
   kind: nimi-mediated-default
 metadata:
-  summary: Create short videos with scripts, narration, aligned subtitles and local or stock footage.
+  summary: 输入主题或手工脚本，结合本地、库存或 AI 素材、自动配音与真实时间轴字幕，制作可逐阶段检查的 1080p 短视频。
   icon: assets/app-icon.png
   release_notes: RELEASE_NOTES.md
+  author: nimiplatform
+  homepage_url: https://github.com/nimiplatform/MoneyPrinterTurbo
+  support_url: https://github.com/nimiplatform/MoneyPrinterTurbo/issues
+  storefront:
+    category: video-media
+    default_locale: zh
+    locales:
+      zh:
+        tags:
+          - 短视频制作
+          - AI 配音
+          - 逐词字幕
+          - 批量成片
+          - 跨端工作区
+        highlights:
+          - title: 脚本、画面与配音全流程编排
+            description: 支持主题生成或手工脚本、9:16 / 16:9 / 1:1 三种 1080p 画幅，以及本地、库存与 Nimi AI 素材自由组合。
+          - title: 真实时间轴字幕与手工校对
+            description: 基于真实音频转写生成句级或逐词弹跳字幕，支持阿拉伯语连写排版、时间轴校对并复用音频直接重新成片。
+          - title: 分阶段检查与可控批量队列
+            description: 可在脚本、配音、字幕、素材或成片任一阶段停靠检查产物，支持批量变体制作、暂停恢复与原 Job 查询。
+          - title: PC 持久工作区与远程直连
+            description: 任务与素材保存在主 PC 的 Nimi 存储中；Web 与 Android 可通过获准集成远程发起制作、校对并保存成片。
+      en:
+        display_name: MoneyPrinterTurbo
+        summary: Turn a topic or script into 1080p short videos with local, stock, or AI visuals, narration, and time-aligned subtitles—inspectable at every stage.
+        introduction: NIMI_APP.en.md
+        tags:
+          - Short Video
+          - AI Voiceover
+          - Aligned Subtitles
+          - Batch Production
+          - Remote Workspace
+        highlights:
+          - title: End-to-End Short Video Pipeline
+            description: Start from a topic or your own script in 9:16, 16:9, or 1:1 1080p, combining local files, stock libraries, or Nimi AI visuals.
+          - title: Time-Aligned Subtitles & Cue Editing
+            description: Generate sentence or word-by-word pop subtitles from real transcription timestamps, refine cues, and re-render without rerunning AI.
+          - title: Stage-by-Stage Inspection & Batch Queue
+            description: Stop at script, audio, subtitle, materials, or final video, inspect every artifact, run batch variants, and explicitly resume paused jobs.
+          - title: PC-Owned Storage & Remote Access
+            description: Keep projects, media, and external service keys on your PC while connecting from Web or Android via approved Integration permissions.
+    media:
+      cover:
+        path: assets/storefront/cover.webp
+      gallery:
+        - id: workspace-create
+          kind: image
+          path: assets/storefront/cover.webp
+          caption:
+            zh: 创作工作台与实时成片预览：编辑主题与脚本，右侧同步查看六阶段进度及带字幕的 1080p 成片
+            en: "Creation studio & live video preview: edit topic and script while inspecting six-stage progress and subtitled 1080p output"
+        - id: studio-media
+          kind: image
+          path: assets/storefront/studio-media.webp
+          caption:
+            zh: 画面与素材编排：选择 9:16 / 16:9 / 1:1 画幅、本地或库存/AI 素材与剪辑参数，右侧查看配音及全部阶段产物
+            en: "Visuals & stage artifacts: choose 9:16 / 16:9 / 1:1 output, local/stock/AI media, clip settings, audio preview, and every generated file"
+        - id: subtitle-cues
+          kind: image
+          path: assets/storefront/subtitle-cues.webp
+          caption:
+            zh: 字幕样式与手工校对：配置句级/逐词动效与圆角背景，直接微调每条时间轴并复用音频重新成片
+            en: "Subtitle styling & cue proofreading: configure sentence/word-by-word motion and rounded pills, refine timestamps, and re-render without rerunning AI"
+        - id: history-artifacts
+          kind: image
+          path: assets/storefront/history-artifacts.webp
+          caption:
+            zh: 制作记录与分阶段恢复：管理多画幅历史任务，查看成片预览与暂停状态，不自动重放未完成队列
+            en: "Production history & explicit recovery: browse multi-aspect tasks, preview finished renders, and inspect paused runs without automatic replay"
+        - id: ai-config
+          kind: image
+          path: assets/storefront/ai-config.webp
+          caption:
+            zh: Nimi AI 配置：按脚本、配音、逐词转写、画面与配乐分项绑定本机或云端模型资源，凭据由 Nimi 统一托管
+            en: "Nimi AI Config: assign local or cloud resources per capability—script, voiceover, aligned transcription, visuals, and music—managed by Nimi"
+        - id: business-settings
+          kind: image
+          path: assets/storefront/business-settings.webp
+          caption:
+            zh: PC 端业务设置：按需配置 Pexels、Pixabay、Coverr 与 Upload-Post 账户及目标平台，密钥仅留存在本机 PC
+            en: "PC-only business settings: optionally configure Pexels, Pixabay, Coverr, and Upload-Post accounts and target platforms locally on your PC"
 local_development:
   electron:
     renderer_origin: http://127.0.0.1:1450

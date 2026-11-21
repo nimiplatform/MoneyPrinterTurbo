@@ -7,12 +7,13 @@ LICENSE -text
 .github/workflows/nimi-web-release.yml text eol=lf
 AGENTS.md text eol=lf
 .agents/skills/nimi-app-lifecycle/** text eol=lf
-.nimi/methodology/authority-authoring.yaml text eol=lf
+.nimi/**/*.yaml text eol=lf
 
 # Binary assets
 *.mp3 binary
 *.mp4 binary
 *.png binary
+*.webp binary
 *.jpg binary
 *.jpeg binary
 *.gif binary
