@@ -8,6 +8,9 @@ LICENSE -text
 AGENTS.md text eol=lf
 .agents/skills/nimi-app-lifecycle/** text eol=lf
 .nimi/**/*.yaml text eol=lf
+NIMI_APP.md text eol=lf
+NIMI_APP.*.md text eol=lf
+RELEASE_NOTES.md text eol=lf
 
 # Binary assets
 *.mp3 binary
